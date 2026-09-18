@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query, get, run, persistDb } from '../db/database';
-import { AcademicYear } from '../../src/types';
+import { AcademicYear } from '../types';
 import { generateAcademicYearBills } from '../services/billingEngine';
 
 const router = Router();

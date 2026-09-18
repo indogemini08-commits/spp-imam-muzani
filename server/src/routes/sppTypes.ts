@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query, get, run, persistDb } from '../db/database';
-import { SPPType } from '../../src/types';
+import { SPPType } from '../types';
 
 const router = Router();
 

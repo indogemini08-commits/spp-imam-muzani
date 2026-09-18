@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query, get, run, persistDb } from '../db/database';
-import { EskulType, Student } from '../../src/types';
+import { EskulType, Student } from '../types';
 import { synchronizeMasterData } from '../services/billingEngine';
 
 const router = Router();

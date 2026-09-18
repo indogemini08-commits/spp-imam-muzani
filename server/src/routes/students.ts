@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query, get, run, persistDb } from '../db/database';
-import { Student, Bill, Transaction, WhatsAppLog, SPPType, EskulType } from '../../src/types';
+import { Student, Bill, Transaction, WhatsAppLog, SPPType, EskulType } from '../types';
 import {
   ensureStudentPreviousArrearsBill,
   ensureStudent12MonthSppBills,

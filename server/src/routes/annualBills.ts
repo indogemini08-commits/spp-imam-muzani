@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query, get, run, persistDb } from '../db/database';
-import { AnnualBillType, AnnualBillPackage } from '../../src/types';
+import { AnnualBillType, AnnualBillPackage } from '../types';
 import { syncAnnualBills } from '../services/billingEngine';
 
 const router = Router();

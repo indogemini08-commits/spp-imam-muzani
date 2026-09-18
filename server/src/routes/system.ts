@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { query, get, run, exportDatabaseState, importDatabaseState, persistDb } from '../db/database';
 import { seedDatabase } from '../db/seed';
-import { Transaction, Student, Bill, AuditLog } from '../../src/types';
+import { Transaction, Student, Bill, AuditLog } from '../types';
 
 const router = Router();
 

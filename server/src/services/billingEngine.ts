@@ -1,5 +1,5 @@
 import { query, get, run, persistDb } from '../db/database';
-import { Bill, Student, SPPType, EskulType, AnnualBillType, SchoolSettings } from '../../src/types';
+import { Bill, Student, SPPType, EskulType, AnnualBillType, SchoolSettings } from '../types';
 
 export function recalculateBillStatus(billId: string): void {
   const bill = get<Bill>('SELECT * FROM bills WHERE id = ?', [billId]);
@@ -126,7 +126,7 @@ export async function generateAcademicYearBills(academicYearId: string): Promise
       }
 
       const billId = `bill_ann_${student.id}_${ann.id}`;
-      const isOptional = ann.is_mandatory === 0 || (ann.is_mandatory as any) === false;
+      const isOptional = (ann.is_mandatory as any) === 0 || (ann.is_mandatory as any) === false;
       const initialStatus = (!isOptional && ann.due_date < today.toISOString().split('T')[0]) ? 'TUNGGAKAN' : 'BELUM_BAYAR';
 
       run(`
@@ -742,7 +742,7 @@ export function syncAnnualBills(targetStudentId?: string) {
         );
 
         if (isTargeted) {
-          const isOptional = ann.is_mandatory === 0 || (ann.is_mandatory as any) === false;
+          const isOptional = (ann.is_mandatory as any) === 0 || (ann.is_mandatory as any) === false;
           const initialStatus = (!isOptional && ann.due_date < today) ? 'TUNGGAKAN' : 'BELUM_BAYAR';
 
           if (!existingBill) {

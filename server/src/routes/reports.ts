@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query, get } from '../db/database';
-import { Student, Bill, SPPType, EskulType, AnnualBillType } from '../../src/types';
+import { Student, Bill, SPPType, EskulType, AnnualBillType } from '../types';
 import { syncAnnualBills } from '../services/billingEngine';
 
 const router = Router();
@@ -95,7 +95,7 @@ router.get('/penerimaan', (req, res) => {
     for (const col of dynamicColumns) {
       grandTotals[col.key] = 0;
     }
-    for (const r of rows) {
+    for (const r of (rows as any[])) {
       for (const col of dynamicColumns) {
         grandTotals[col.key] += r[col.key] || 0;
       }

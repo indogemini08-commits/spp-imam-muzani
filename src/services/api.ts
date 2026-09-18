@@ -10,10 +10,20 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   };
 
   const response = await fetch(url, { ...options, headers });
-  const data = await response.json();
+  const rawText = await response.text();
+  let data: any;
+
+  try {
+    data = rawText ? JSON.parse(rawText) : {};
+  } catch (_) {
+    if (!response.ok) {
+      throw new Error(`Server error (${response.status}): Layanan backend sedang tidak dapat diakses atau sedang memulai ulang.`);
+    }
+    throw new Error('Format respons server tidak valid.');
+  }
 
   if (!response.ok) {
-    throw new Error(data.error || 'Terjadi kesalahan pada permintaan API');
+    throw new Error(data.error || data.message || 'Terjadi kesalahan pada permintaan API');
   }
 
   return data as T;

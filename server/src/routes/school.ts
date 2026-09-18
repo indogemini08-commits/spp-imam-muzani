@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query, get, run, persistDb } from '../db/database';
-import { SchoolSettings } from '../../src/types';
+import { SchoolSettings } from '../types';
 
 const router = Router();
 

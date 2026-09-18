@@ -16,9 +16,9 @@ async function loadSqlJsEngine() {
   } catch (err) {
     try {
       // @ts-ignore
-      const asmMod = await import('sql.js/dist/sql-asm.js');
-      const initAsm = asmMod.default || asmMod;
-      return await initAsm();
+      const asmMod: any = await import('sql.js/dist/sql-asm.js');
+      const initAsm = asmMod?.default || asmMod;
+      return await (initAsm as any)();
     } catch (asmErr) {
       console.error('Gagal menginisialisasi engine sql.js:', asmErr);
       throw asmErr;

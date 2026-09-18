@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query, get } from '../db/database';
-import { Student, Bill, Transaction, SchoolSettings } from '../../src/types';
+import { Student, Bill, Transaction, SchoolSettings } from '../types';
 
 const router = Router();
 

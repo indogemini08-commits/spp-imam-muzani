@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query, get, run, persistDb } from '../db/database';
-import { WhatsAppTemplate, WhatsAppLog } from '../../src/types';
+import { WhatsAppTemplate, WhatsAppLog } from '../types';
 import { getArrearsRecipients, logWhatsAppDispatch } from '../services/whatsappService';
 
 const router = Router();

@@ -1,5 +1,5 @@
 import { query, get, run, persistDb } from '../db/database';
-import { Student, SchoolSettings, WhatsAppTemplate, Bill } from '../../src/types';
+import { Student, SchoolSettings, WhatsAppTemplate, Bill } from '../types';
 
 export function formatPhoneNumber(phone: string): string {
   if (!phone) return '';
@@ -90,7 +90,7 @@ export function getArrearsRecipients(): ArrearsStudentSummary[] {
 
   const results: ArrearsStudentSummary[] = [];
 
-  for (const [studentId, bills] of studentBillsMap.entries()) {
+  for (const [studentId, bills] of Array.from(studentBillsMap.entries())) {
     const student = get<Student>('SELECT * FROM students WHERE id = ?', [studentId]);
     if (!student) continue;
 
