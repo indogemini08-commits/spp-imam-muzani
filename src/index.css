@@ -1,0 +1,454 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-gradient-from: #f8fafc;
+    --bg-gradient-to: #eef2f8;
+    --card-bg: rgba(255, 255, 255, 0.96);
+    --card-border: rgba(203, 213, 225, 0.85);
+    --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  }
+
+  .dark {
+    --bg-gradient-from: #060b18;
+    --bg-gradient-to: #030712;
+    --card-bg: rgba(13, 22, 42, 0.88);
+    --card-border: rgba(59, 130, 246, 0.25);
+    --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.55), 0 0 18px -3px rgba(30, 64, 175, 0.25);
+  }
+
+  body {
+    background: radial-gradient(circle at 10% 20%, rgba(30, 64, 175, 0.04) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.04) 0%, transparent 40%),
+                linear-gradient(135deg, var(--bg-gradient-from), var(--bg-gradient-to));
+    min-height: 100vh;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  img {
+    display: inline-block;
+  }
+
+  .dark body {
+    background: radial-gradient(circle at 10% 20%, rgba(30, 64, 175, 0.12) 0%, transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.10) 0%, transparent 45%),
+                linear-gradient(135deg, var(--bg-gradient-from), var(--bg-gradient-to));
+    color: #f8fafc;
+  }
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  border-radius: 1rem;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-hover:hover {
+  border-color: rgba(30, 64, 175, 0.45);
+  box-shadow: 0 12px 30px -5px rgba(30, 64, 175, 0.18);
+  transform: translateY(-1px);
+}
+
+.glass-dropdown {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(203, 213, 225, 0.9);
+}
+
+.dark .glass-dropdown {
+  background: rgba(13, 22, 42, 0.96);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* High Contrast Form Controls in Dark Mode */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: rgba(10, 17, 34, 0.85);
+  border-color: rgba(71, 85, 105, 0.65);
+  color: #f8fafc;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #94a3b8;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+/* High Contrast Data Table Elements in Dark Mode */
+.dark table thead th {
+  background-color: rgba(15, 25, 48, 0.95);
+  color: #f1f5f9;
+  border-color: rgba(51, 65, 85, 0.7);
+}
+
+.dark table tbody td {
+  border-color: rgba(30, 41, 59, 0.6);
+  color: #e2e8f0;
+}
+
+.dark table tbody tr:hover {
+  background-color: rgba(30, 48, 85, 0.25);
+}
+
+/* Smooth custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.6);
+}
+
+/* ===================================================
+   PROFESSIONAL PRINT STYLES (REPORTS & KWITANSI)
+   =================================================== */
+@media print {
+  /* 1. Reset Body & Page */
+  @page {
+    size: landscape;
+    margin: 8mm 10mm 8mm 10mm;
+  }
+
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html, html.dark, body, .dark body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #0f172a !important;
+    font-size: 9pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Force all dark mode backgrounds and text colors to print-friendly defaults */
+  .dark,
+  [class*="dark:bg-"],
+  [class*="bg-slate-900"],
+  [class*="bg-slate-800"],
+  [class*="bg-slate-950"],
+  [class*="bg-[#0"] {
+    background-color: transparent !important;
+    background: transparent !important;
+    color: #0f172a !important;
+  }
+
+  [class*="dark:text-"],
+  [class*="text-white"],
+  [class*="text-slate-100"],
+  [class*="text-slate-200"],
+  [class*="text-slate-300"],
+  [class*="text-slate-400"] {
+    color: #0f172a !important;
+  }
+
+  [class*="dark:border-"] {
+    border-color: #cbd5e1 !important;
+  }
+
+  #root {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* 2. Hide Web Shell & Navigation */
+  aside,
+  header,
+  nav,
+  .no-print,
+  .no-print *,
+  button,
+  .btn,
+  input[type="text"],
+  input[type="date"],
+  select,
+  textarea,
+  .filter-bar,
+  .action-bar,
+  .topbar,
+  .sidebar,
+  [role="dialog"]:not(.print-dialog) {
+    display: none !important;
+  }
+
+  /* When printing from page with open Kwitansi Modal, strictly hide all background tables, sidebars & backdrops */
+  body:has(#kwitansi-printable-content) aside,
+  body:has(#kwitansi-printable-content) header,
+  body:has(#kwitansi-printable-content) nav,
+  body:has(#kwitansi-printable-content) main,
+  body:has(#kwitansi-printable-content) .no-print,
+  body:has(#kwitansi-printable-content) .modal-backdrop,
+  body:has(#kwitansi-printable-content) div.fixed.inset-0 > div:first-child,
+  body:has(#kwitansi-printable-content) [class*="bg-slate-950/60"] {
+    display: none !important;
+  }
+
+  body:has(#kwitansi-printable-content) .fixed.inset-0 {
+    position: static !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+
+  body:has(#kwitansi-printable-content) #kwitansi-printable-content {
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 6px !important;
+    display: block !important;
+  }
+
+  /* 3. Neutralize layout containers */
+  div[class*="lg:pl-"],
+  div[class*="pl-"],
+  div[class*="ml-"] {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* 4. Flatten GlassCard & Web Cards */
+  .glass-card,
+  [class*="backdrop-blur"] {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* 5. Professional Report Table Styling */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 6px !important;
+    margin-bottom: 10px !important;
+    page-break-inside: auto;
+    background: #ffffff !important;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  th, th * {
+    background-color: #0f2744 !important;
+    color: #ffffff !important;
+    border: 1px solid #0f2744 !important;
+    padding: 5px 6px !important;
+    font-size: 8pt !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 4px 6px !important;
+    font-size: 8pt !important;
+    color: #0f172a !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  tbody tr:nth-child(even) td {
+    background-color: #f8fafc !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  tfoot td, tfoot td * {
+    background-color: #e2e8f0 !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+    border: 1.5px solid #64748b !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove sticky table columns and scroll containers in print */
+  .sticky {
+    position: static !important;
+    background: transparent !important;
+  }
+
+  .overflow-x-auto,
+  .overflow-hidden {
+    overflow: visible !important;
+  }
+
+  /* Print Badges / Status tags */
+  .print-status-tag {
+    display: inline-block !important;
+    padding: 1px 5px !important;
+    border: 1px solid #94a3b8 !important;
+    border-radius: 3px !important;
+    font-size: 7.5pt !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    white-space: nowrap !important;
+  }
+
+  /* Compact & Non-wrapping styles for wide matrix reports (SPP 12 Bulan) */
+  .print-matrix-table {
+    font-size: 7pt !important;
+    table-layout: auto !important;
+    width: 100% !important;
+  }
+
+  .print-matrix-table th,
+  .print-matrix-table td {
+    padding: 3px 2px !important;
+    font-size: 6.8pt !important;
+    white-space: nowrap !important;
+  }
+
+  .print-matrix-table th.col-name,
+  .print-matrix-table td.col-name {
+    white-space: normal !important;
+    max-width: 115px !important;
+    word-break: normal !important;
+    font-size: 7.2pt !important;
+  }
+
+  .print-matrix-table .print-currency,
+  .print-currency {
+    white-space: nowrap !important;
+    font-variant-numeric: tabular-nums !important;
+  }
+
+  .print-matrix-table .print-status-tag {
+    font-size: 6.5pt !important;
+    padding: 0.5px 3px !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ===================================================
+   ISOLASI DOKUMEN RESMI PDF PREVIEW (LIGHT SCHEME GUARANTEED)
+   =================================================== */
+.pdf-document-paper {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  color-scheme: light !important;
+}
+
+.pdf-document-paper table thead th {
+  background-color: #0f2744 !important;
+  color: #ffffff !important;
+  border-color: #334155 !important;
+  vertical-align: middle !important;
+}
+
+.pdf-document-paper table tbody td {
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  background-color: #ffffff;
+  vertical-align: middle !important;
+}
+
+.pdf-document-paper table tbody tr:nth-child(even) td {
+  background-color: #f8fafc !important;
+}
+
+.pdf-document-paper table tfoot td {
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+  vertical-align: middle !important;
+}
+
+/* ===================================================
+   KWITANSI RESMI PREVIEW & PDF MIDDLE ALIGN RULES
+   =================================================== */
+#kwitansi-printable-content,
+#kwitansi-printable-content *,
+#kwitansi-clone-render,
+#kwitansi-clone-render * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+#kwitansi-printable-content table,
+#kwitansi-clone-render table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+
+#kwitansi-printable-content th,
+#kwitansi-printable-content td,
+#kwitansi-clone-render th,
+#kwitansi-clone-render td {
+  vertical-align: middle !important;
+  padding: 8px 12px !important;
+}
+
+
