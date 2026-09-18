@@ -1,6 +1,7 @@
 import type { Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { SCHEMA_SQL } from './schema';
 
 let db: Database | null = null;
@@ -8,21 +9,49 @@ const isVercel = Boolean(process.env.VERCEL);
 const DATA_DIR = isVercel ? '/tmp' : path.resolve(process.cwd(), 'server', 'data');
 const DB_FILE = path.join(DATA_DIR, 'spp.db');
 
+const currentDir = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+
 async function loadSqlJsEngine() {
+  const wasmCandidates = [
+    path.resolve(process.cwd(), 'server', 'data', 'sql-wasm.wasm'),
+    path.resolve(process.cwd(), 'api', 'sql-wasm.wasm'),
+    path.resolve(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
+    path.resolve(currentDir, 'sql-wasm.wasm'),
+    path.resolve(currentDir, '..', 'data', 'sql-wasm.wasm')
+  ];
+
+  let wasmBinary: Buffer | undefined;
+  for (const cand of wasmCandidates) {
+    if (fs.existsSync(cand)) {
+      try {
+        wasmBinary = fs.readFileSync(cand);
+        break;
+      } catch (_) {}
+    }
+  }
+
   try {
     // @ts-ignore
-    const initSqlJs = (await import('sql.js')).default;
-    return await initSqlJs();
-  } catch (err) {
-    try {
-      // @ts-ignore
-      const asmMod: any = await import('sql.js/dist/sql-asm.js');
-      const initAsm = asmMod?.default || asmMod;
-      return await (initAsm as any)();
-    } catch (asmErr) {
-      console.error('Gagal menginisialisasi engine sql.js:', asmErr);
-      throw asmErr;
+    const sqlModule: any = await import('sql.js');
+    const initFn = typeof sqlModule === 'function' ? sqlModule : (sqlModule?.default || sqlModule);
+    if (wasmBinary && typeof initFn === 'function') {
+      return await initFn({ wasmBinary });
     }
+    if (typeof initFn === 'function') {
+      return await initFn();
+    }
+  } catch (wasmErr) {
+    console.warn('WASM initialization failed, attempting fallback to ASM:', wasmErr);
+  }
+
+  try {
+    // @ts-ignore
+    const asmMod: any = await import('sql.js/dist/sql-asm.js');
+    const initAsm = typeof asmMod === 'function' ? asmMod : (asmMod?.default || asmMod);
+    return await (initAsm as any)();
+  } catch (asmErr) {
+    console.error('Gagal menginisialisasi engine sql.js:', asmErr);
+    throw asmErr;
   }
 }
 
