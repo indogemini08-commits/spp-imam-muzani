@@ -30,12 +30,32 @@ export async function createApp() {
 
   app.use(cors({
     origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
   }));
+  app.options('*', cors());
+
+  // URL Normalizer for Vercel Serverless Function & Local Dev
+  // Automatically ensures routes match whether Vercel keeps or rewrites /api
+  app.use((req, _res, next) => {
+    if (!req.url.startsWith('/api')) {
+      req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`;
+    }
+    next();
+  });
 
   app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+  // Root & Health check
+  app.get(['/api', '/api/health'], (_req, res) => {
+    res.json({
+      status: 'ok',
+      service: 'SPP Imam Muzani Backend API',
+      version: '1.0.0',
+      time: new Date().toISOString()
+    });
+  });
 
   // API Routes
   app.use('/api/auth', authRoutes);
@@ -52,11 +72,6 @@ export async function createApp() {
   app.use('/api/reports', reportRoutes);
   app.use('/api/system', systemRoutes);
   app.use('/api/portal', portalRoutes);
-
-  // Health check
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', time: new Date().toISOString() });
-  });
 
   return app;
 }
