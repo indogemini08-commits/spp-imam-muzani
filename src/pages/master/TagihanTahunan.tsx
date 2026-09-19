@@ -53,6 +53,9 @@ export const TagihanTahunan: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    const handleSync = () => loadData();
+    window.addEventListener('supabase-data-changed', handleSync);
+    return () => window.removeEventListener('supabase-data-changed', handleSync);
   }, []);
 
   const handleOpenAdd = () => {

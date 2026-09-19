@@ -1,11 +1,9 @@
 import { query, run, persistDb } from './database';
 
 export async function seedDatabase(): Promise<void> {
-  const existingStudents = query('SELECT COUNT(*) as count FROM students');
-  const existingUsers = query('SELECT COUNT(*) as count FROM users');
-
-  if (existingStudents[0]?.count > 0 && existingUsers[0]?.count > 0) {
-    return; // Already fully seeded
+  const existingSettings = query("SELECT id FROM school_settings WHERE id = 'school_main'");
+  if (existingSettings && existingSettings.length > 0) {
+    return; // Database sudah diinisialisasi sebelumnya. Jangan pernah me-reseed data yang telah dihapus pengguna!
   }
 
   console.log('Menjalankan Seeding Data Awal Aplikasi SPP Sekolah...');

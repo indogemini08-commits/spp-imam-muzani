@@ -185,6 +185,14 @@ export const DataSantri: React.FC = () => {
   }, [selectedClass, selectedSpp, selectedStatus]);
 
   useEffect(() => {
+    const handleSync = () => {
+      loadData();
+    };
+    window.addEventListener('supabase-data-changed', handleSync);
+    return () => window.removeEventListener('supabase-data-changed', handleSync);
+  }, []);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       loadData();
     }, 300);
@@ -736,11 +744,11 @@ export const DataSantri: React.FC = () => {
                 </th>
                 <th className="py-2.5 px-1.5 w-8 text-center whitespace-nowrap">No</th>
                 <th className="py-2.5 px-2.5 whitespace-nowrap">Santri</th>
-                <th className="py-2.5 px-2 text-center whitespace-nowrap">Kelas / Jenjang</th>
+                <th className="py-2.5 px-2 text-center whitespace-nowrap">Kelas</th>
                 <th className="py-2.5 px-2 whitespace-nowrap">Jenis SPP</th>
-                <th className="py-2.5 px-2 whitespace-nowrap">Eskul Diikuti</th>
-                <th className="py-2.5 px-2 text-right whitespace-nowrap">Tunggakan Lalu</th>
-                <th className="py-2.5 px-2 whitespace-nowrap">WhatsApp Wali</th>
+                <th className="py-2.5 px-2 whitespace-nowrap hidden lg:table-cell">Eskul Diikuti</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap hidden md:table-cell">Tunggakan Lalu</th>
+                <th className="py-2.5 px-2 whitespace-nowrap hidden sm:table-cell">WhatsApp Wali</th>
                 <th className="py-2.5 px-1.5 text-center whitespace-nowrap">Status</th>
                 <th className="py-2.5 px-1.5 text-center whitespace-nowrap">Aksi</th>
               </tr>
@@ -801,7 +809,7 @@ export const DataSantri: React.FC = () => {
                           {formatRupiah(s.spp_amount)}/bln
                         </div>
                       </td>
-                      <td className="py-2.5 px-2 whitespace-nowrap">
+                      <td className="py-2.5 px-2 whitespace-nowrap hidden lg:table-cell">
                         {s.eskul_names && s.eskul_names.length > 0 ? (
                           <div className="flex flex-wrap items-center gap-1 whitespace-nowrap">
                             {s.eskul_names.map((eName: string, eIdx: number) => (
@@ -814,7 +822,7 @@ export const DataSantri: React.FC = () => {
                           <span className="text-slate-400 text-[10px] whitespace-nowrap">Tidak ada eskul</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-2 text-right whitespace-nowrap">
+                      <td className="py-2.5 px-2 text-right whitespace-nowrap hidden md:table-cell">
                         {s.previous_arrears && s.previous_arrears > 0 ? (
                           <div className="whitespace-nowrap">
                             <span className="font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
@@ -830,7 +838,7 @@ export const DataSantri: React.FC = () => {
                           <span className="text-slate-400 font-mono whitespace-nowrap">-</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-2 whitespace-nowrap">
+                      <td className="py-2.5 px-2 whitespace-nowrap hidden sm:table-cell">
                         <div className="flex items-center gap-1 font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap text-xs">
                           <Phone className="w-3 h-3 text-emerald-500 shrink-0" />
                           <span>{s.parent_phone}</span>

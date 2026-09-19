@@ -25744,9 +25744,8 @@ init_database();
 // server/src/db/seed.ts
 init_database();
 async function seedDatabase() {
-  const existingStudents = query("SELECT COUNT(*) as count FROM students");
-  const existingUsers = query("SELECT COUNT(*) as count FROM users");
-  if (existingStudents[0]?.count > 0 && existingUsers[0]?.count > 0) {
+  const existingSettings = query("SELECT id FROM school_settings WHERE id = 'school_main'");
+  if (existingSettings && existingSettings.length > 0) {
     return;
   }
   console.log("Menjalankan Seeding Data Awal Aplikasi SPP Sekolah...");

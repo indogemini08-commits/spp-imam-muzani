@@ -45,6 +45,8 @@ import { LogAktivitas } from './pages/akun/LogAktivitas';
 import { BackupRestore } from './pages/akun/BackupRestore';
 import { api } from './services/api';
 import { KwitansiVerificationModal } from './components/kwitansi/KwitansiVerificationModal';
+import { isSupabaseConfigured } from './lib/supabase';
+import { supabaseService } from './services/supabaseService';
 
 export const App: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -53,6 +55,18 @@ export const App: React.FC = () => {
 
   const [verifiedReceiptData, setVerifiedReceiptData] = useState<any | null>(null);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+
+  // Realtime multi-device database subscription
+  useEffect(() => {
+    if (isSupabaseConfigured()) {
+      const unsubscribe = supabaseService.realtime.subscribe((payload) => {
+        window.dispatchEvent(new CustomEvent('supabase-data-changed', { detail: payload }));
+      });
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, []);
 
   // Check URL params for direct parent portal navigation and receipt verification
   useEffect(() => {

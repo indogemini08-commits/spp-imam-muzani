@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Menu,
   Search,
@@ -9,11 +9,15 @@ import {
   Bell,
   LogOut,
   User as UserIcon,
-  Calendar
+  Calendar,
+  Cloud,
+  CloudOff
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { PageView } from './Sidebar';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { CloudSyncModal } from '../common/CloudSyncModal';
 
 interface TopbarProps {
   currentPage: PageView;
@@ -30,6 +34,8 @@ export const Topbar: React.FC<TopbarProps> = ({
 }) => {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const [isCloudSyncOpen, setIsCloudSyncOpen] = useState(false);
+  const isCloudConfigured = isSupabaseConfigured();
 
   const getPageInfo = (page: PageView): { title: string; subtitle: string } => {
     switch (page) {
@@ -121,6 +127,34 @@ export const Topbar: React.FC<TopbarProps> = ({
             <span>T.A. 2026/2027</span>
           </div>
 
+          {/* Cloud Database Sync Pill & Multi-Device Button */}
+          <button
+            type="button"
+            onClick={() => setIsCloudSyncOpen(true)}
+            title={isCloudConfigured ? 'Database Cloud Supabase Terhubung (Sinkron Realtime)' : 'Klik untuk Hubungkan Cloud Supabase & Bagikan Link HP'}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+              isCloudConfigured
+                ? 'bg-emerald-50/90 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-700/80 shadow-sm'
+                : 'bg-amber-50/90 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border-amber-300/80 dark:border-amber-700/80'
+            }`}
+          >
+            {isCloudConfigured ? (
+              <>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <Cloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">Cloud Sync</span>
+              </>
+            ) : (
+              <>
+                <CloudOff className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span className="hidden sm:inline">Sync Cloud / HP</span>
+              </>
+            )}
+          </button>
+
           {/* Global Search Button */}
           <button
             type="button"
@@ -174,6 +208,12 @@ export const Topbar: React.FC<TopbarProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Cloud Sync Modal */}
+      <CloudSyncModal
+        isOpen={isCloudSyncOpen}
+        onClose={() => setIsCloudSyncOpen(false)}
+      />
     </header>
   );
 };

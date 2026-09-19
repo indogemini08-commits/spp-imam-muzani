@@ -3,26 +3,69 @@ import { createClient } from '@supabase/supabase-js';
 
 // ============================================================================
 // Konfigurasi Koneksi Supabase JS SDK
-// Ganti nilai placeholder ini atau atur di file .env / Vercel Environment Variables:
-// VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY
+// Otomatis membaca dari:
+// 1. URL Query Parameter (?sb_url=...&sb_key=...) untuk kemudahan share antar-device
+// 2. localStorage ('spp_supabase_url' & 'spp_supabase_anon_key')
+// 3. Environment Variables (VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY)
 // ============================================================================
 
-export const SUPABASE_URL: string = 
-  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) || 
-  'https://YOUR_SUPABASE_PROJECT_ID.supabase.co';
+function resolveCredentials(): { url: string; key: string } {
+  let url = '';
+  let key = '';
 
-export const SUPABASE_ANON_KEY: string = 
-  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) || 
-  'YOUR_SUPABASE_ANON_KEY_HERE';
+  // 1. Cek Query Param (ketika link di-share ke HP / device lain dengan kredensial)
+  if (typeof window !== 'undefined') {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const qUrl = params.get('sb_url');
+      const qKey = params.get('sb_key');
+      if (qUrl && qKey) {
+        localStorage.setItem('spp_supabase_url', qUrl.trim());
+        localStorage.setItem('spp_supabase_anon_key', qKey.trim());
+        url = qUrl.trim();
+        key = qKey.trim();
+      }
+    } catch (_) {}
+  }
+
+  // 2. Cek localStorage
+  if (!url && typeof window !== 'undefined') {
+    try {
+      url = localStorage.getItem('spp_supabase_url') || '';
+      key = localStorage.getItem('spp_supabase_anon_key') || '';
+    } catch (_) {}
+  }
+
+  // 3. Cek Vite Environment Variables
+  if (!url && typeof import.meta !== 'undefined' && (import.meta as any).env) {
+    url = (import.meta as any).env.VITE_SUPABASE_URL || '';
+    key = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || '';
+  }
+
+  // Default fallback placeholder
+  url = url || 'https://YOUR_SUPABASE_PROJECT_ID.supabase.co';
+  key = key || 'YOUR_SUPABASE_ANON_KEY_HERE';
+
+  return { url, key };
+}
+
+const creds = resolveCredentials();
+export const SUPABASE_URL: string = creds.url;
+export const SUPABASE_ANON_KEY: string = creds.key;
 
 // Nama bucket Storage sesuai konfigurasi pengguna
 export const STORAGE_BUCKET_NAME = 'ImamMuzaniPay';
 
-// Inisialisasi Supabase Client
+// Inisialisasi Supabase Client Tunggal
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 });
 
@@ -39,8 +82,38 @@ export function isSupabaseConfigured(): boolean {
 }
 
 /**
+ * Simpan konfigurasi Supabase ke localStorage dan muat ulang halaman
+ */
+export function saveSupabaseConfig(url: string, key: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('spp_supabase_url', url.trim());
+    localStorage.setItem('spp_supabase_anon_key', key.trim());
+    window.location.reload();
+  }
+}
+
+/**
+ * Hapus konfigurasi Supabase dari localStorage
+ */
+export function clearSupabaseConfig(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('spp_supabase_url');
+    localStorage.removeItem('spp_supabase_anon_key');
+    window.location.reload();
+  }
+}
+
+/**
+ * Dapatkan link share yang otomatis mengaktifkan database Supabase di perangkat lain
+ */
+export function getShareableSupabaseLink(): string {
+  if (typeof window === 'undefined' || !isSupabaseConfigured()) return '';
+  const base = window.location.origin + window.location.pathname;
+  return `${base}?sb_url=${encodeURIComponent(SUPABASE_URL)}&sb_key=${encodeURIComponent(SUPABASE_ANON_KEY)}`;
+}
+
+/**
  * Mendapatkan Public URL untuk file gambar di bucket Storage ImamMuzaniPay
- * @param path Nama file atau path di dalam bucket (misal: 'school/logo.png' atau 'proofs/kwt_123.jpg')
  */
 export function getStoragePublicUrl(path: string): string {
   if (!path) return '';
@@ -53,9 +126,6 @@ export function getStoragePublicUrl(path: string): string {
 
 /**
  * Upload file gambar ke bucket Storage ImamMuzaniPay
- * @param file File binary dari input file
- * @param folder Direktori di dalam bucket (misal: 'proofs', 'logos', 'signatures')
- * @returns Public URL gambar yang berhasil di-upload
  */
 export async function uploadToImamMuzaniPay(
   file: File,

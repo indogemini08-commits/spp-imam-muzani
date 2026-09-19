@@ -184,12 +184,33 @@ export const supabaseService = {
       try {
         if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
 
+        // Hapus data tagihan dan konfirmasi terkait terlebih dahulu
+        await supabase.from('bills').delete().eq('student_id', id);
+        await supabase.from('payment_confirmations').delete().eq('student_id', id);
+
         const { error } = await supabase.from('students').delete().eq('id', id);
         if (error) throw error;
 
         return { success: true, error: null };
       } catch (err: any) {
         return { success: false, error: err?.message || 'Gagal menghapus santri' };
+      }
+    },
+
+    async bulkDelete(ids: string[]): Promise<{ success: boolean; error: string | null }> {
+      try {
+        if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
+        if (!ids || ids.length === 0) return { success: true, error: null };
+
+        await supabase.from('bills').delete().in('student_id', ids);
+        await supabase.from('payment_confirmations').delete().in('student_id', ids);
+
+        const { error } = await supabase.from('students').delete().in('id', ids);
+        if (error) throw error;
+
+        return { success: true, error: null };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Gagal menghapus data santri terpilih' };
       }
     }
   },
@@ -358,6 +379,7 @@ export const supabaseService = {
       }
     },
 
+    // SPP Types CRUD
     async getSppTypes(): Promise<{ data: SPPType[]; error: string | null }> {
       try {
         if (!isSupabaseConfigured()) return { data: [], error: 'Supabase belum dikonfigurasi' };
@@ -373,6 +395,56 @@ export const supabaseService = {
       }
     },
 
+    async createSppType(type: Partial<SPPType>): Promise<{ success: boolean; data?: any; error: string | null }> {
+      try {
+        if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
+        const id = type.id || `spp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const payload = {
+          ...type,
+          id,
+          active_months: JSON.stringify(type.active_months || ['Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni']),
+          is_mandatory: type.is_mandatory !== false,
+          is_active: type.is_active !== false
+        };
+        const { data, error } = await supabase.from('spp_types').insert(payload).select().single();
+        if (error) throw error;
+        return { success: true, data, error: null };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Gagal menambah jenis SPP' };
+      }
+    },
+
+    async updateSppType(id: string, type: Partial<SPPType>): Promise<{ success: boolean; error: string | null }> {
+      try {
+        if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
+        const payload: any = { ...type };
+        if (payload.active_months && Array.isArray(payload.active_months)) {
+          payload.active_months = JSON.stringify(payload.active_months);
+        }
+        const { error } = await supabase.from('spp_types').update(payload).eq('id', id);
+        if (error) throw error;
+        return { success: true, error: null };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Gagal memperbarui jenis SPP' };
+      }
+    },
+
+    async deleteSppType(id: string): Promise<{ success: boolean; error: string | null }> {
+      try {
+        if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
+        const { count } = await supabase.from('students').select('*', { count: 'exact', head: true }).eq('spp_type_id', id);
+        if (count && count > 0) {
+          return { success: false, error: `Jenis SPP ini tidak dapat dihapus karena masih digunakan oleh ${count} santri.` };
+        }
+        const { error } = await supabase.from('spp_types').delete().eq('id', id);
+        if (error) throw error;
+        return { success: true, error: null };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Gagal menghapus jenis SPP' };
+      }
+    },
+
+    // Eskul Types CRUD
     async getEskulTypes(): Promise<{ data: EskulType[]; error: string | null }> {
       try {
         if (!isSupabaseConfigured()) return { data: [], error: 'Supabase belum dikonfigurasi' };
@@ -384,6 +456,43 @@ export const supabaseService = {
       }
     },
 
+    async createEskulType(type: Partial<EskulType>): Promise<{ success: boolean; data?: any; error: string | null }> {
+      try {
+        if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
+        const id = type.id || `esk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const payload = { ...type, id, is_active: type.is_active !== false };
+        const { data, error } = await supabase.from('eskul_types').insert(payload).select().single();
+        if (error) throw error;
+        return { success: true, data, error: null };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Gagal menambah ekstrakurikuler' };
+      }
+    },
+
+    async updateEskulType(id: string, type: Partial<EskulType>): Promise<{ success: boolean; error: string | null }> {
+      try {
+        if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
+        const { error } = await supabase.from('eskul_types').update(type).eq('id', id);
+        if (error) throw error;
+        return { success: true, error: null };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Gagal memperbarui ekstrakurikuler' };
+      }
+    },
+
+    async deleteEskulType(id: string): Promise<{ success: boolean; error: string | null }> {
+      try {
+        if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
+        await supabase.from('bills').delete().eq('category', 'ESKUL').eq('category_id', id).eq('paid_amount', 0);
+        const { error } = await supabase.from('eskul_types').delete().eq('id', id);
+        if (error) throw error;
+        return { success: true, error: null };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Gagal menghapus ekstrakurikuler' };
+      }
+    },
+
+    // Annual Bill Types CRUD
     async getAnnualBillTypes(): Promise<{ data: AnnualBillType[]; error: string | null }> {
       try {
         if (!isSupabaseConfigured()) return { data: [], error: 'Supabase belum dikonfigurasi' };
@@ -393,6 +502,72 @@ export const supabaseService = {
       } catch (err: any) {
         return { data: [], error: err?.message || 'Gagal memuat komponen biaya tahunan' };
       }
+    },
+
+    async createAnnualBillType(type: Partial<AnnualBillType>): Promise<{ success: boolean; data?: any; error: string | null }> {
+      try {
+        if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
+        const id = type.id || `abt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const payload = {
+          ...type,
+          id,
+          is_active: type.is_active !== false,
+          allow_installment: type.allow_installment !== false,
+          is_mandatory: type.is_mandatory !== false,
+          target_classes: type.target_classes || 'ALL'
+        };
+        const { data, error } = await supabase.from('annual_bill_types').insert(payload).select().single();
+        if (error) throw error;
+        return { success: true, data, error: null };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Gagal menambah pos tagihan tahunan' };
+      }
+    },
+
+    async updateAnnualBillType(id: string, type: Partial<AnnualBillType>): Promise<{ success: boolean; error: string | null }> {
+      try {
+        if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
+        const { error } = await supabase.from('annual_bill_types').update(type).eq('id', id);
+        if (error) throw error;
+        return { success: true, error: null };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Gagal memperbarui pos tagihan tahunan' };
+      }
+    },
+
+    async deleteAnnualBillType(id: string): Promise<{ success: boolean; error: string | null }> {
+      try {
+        if (!isSupabaseConfigured()) return { success: false, error: 'Supabase belum dikonfigurasi' };
+        await supabase.from('bills').delete().eq('category_id', id).eq('paid_amount', 0);
+        const { error } = await supabase.from('annual_bill_types').delete().eq('id', id);
+        if (error) throw error;
+        return { success: true, error: null };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Gagal menghapus pos tagihan tahunan' };
+      }
+    }
+  },
+
+  // ==========================================================================
+  // REALTIME SYNCHRONIZATION HELPER (REALTIME ACROSS ALL DEVICES)
+  // ==========================================================================
+  realtime: {
+    subscribe(onEvent: (payload: any) => void) {
+      if (!isSupabaseConfigured()) return () => {};
+      const channel = supabase
+        .channel('spp_global_sync')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public' },
+          (payload) => {
+            onEvent(payload);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   },
 
