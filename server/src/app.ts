@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import { getDb } from './db/database';
 import { seedDatabase } from './db/seed';
 import { synchronizeMasterData } from './services/billingEngine';
@@ -35,23 +37,14 @@ export async function createApp() {
   }));
   app.options('*', cors());
 
-  // URL Normalizer for Vercel Serverless Function & Local Dev
-  // Automatically ensures routes match whether Vercel keeps or rewrites /api
-  app.use((req, _res, next) => {
-    if (!req.url.startsWith('/api')) {
-      req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`;
-    }
-    next();
-  });
-
   app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-  // Root & Health check
-  app.get(['/api', '/api/health'], (_req, res) => {
+  // Root API Health check
+  app.get('/api/health', (_req, res) => {
     res.json({
       status: 'ok',
-      service: 'SPP Imam Muzani Backend API',
+      service: 'SPP Imam Muzani Standalone Local API',
       version: '1.0.0',
       time: new Date().toISOString()
     });
@@ -72,6 +65,21 @@ export async function createApp() {
   app.use('/api/reports', reportRoutes);
   app.use('/api/system', systemRoutes);
   app.use('/api/portal', portalRoutes);
+
+  // 404 handler for API routes that do not exist
+  app.all('/api/*', (_req, res) => {
+    res.status(404).json({ error: 'Endpoint API tidak ditemukan' });
+  });
+
+  // Serve Frontend Production Build from /dist
+  const distDir = path.resolve(process.cwd(), 'dist');
+  if (fs.existsSync(distDir)) {
+    app.use(express.static(distDir));
+    // SPA Client-Side Routing Fallback (for React Single Page App)
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(distDir, 'index.html'));
+    });
+  }
 
   return app;
 }

@@ -5,8 +5,7 @@ import { fileURLToPath } from 'url';
 import { SCHEMA_SQL } from './schema';
 
 let db: Database | null = null;
-const isVercel = Boolean(process.env.VERCEL);
-const DATA_DIR = isVercel ? '/tmp' : path.resolve(process.cwd(), 'server', 'data');
+const DATA_DIR = path.resolve(process.cwd(), 'server', 'data');
 const DB_FILE = path.join(DATA_DIR, 'spp.db');
 
 const currentDir = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
@@ -14,7 +13,6 @@ const currentDir = typeof __dirname !== 'undefined' ? __dirname : path.dirname(f
 async function loadSqlJsEngine() {
   const wasmCandidates = [
     path.resolve(process.cwd(), 'server', 'data', 'sql-wasm.wasm'),
-    path.resolve(process.cwd(), 'api', 'sql-wasm.wasm'),
     path.resolve(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
     path.resolve(currentDir, 'sql-wasm.wasm'),
     path.resolve(currentDir, '..', 'data', 'sql-wasm.wasm')
@@ -55,10 +53,16 @@ async function loadSqlJsEngine() {
   }
 }
 
-import { fetchCloudState, pushCloudState, getCloudSyncStatus } from './cloudSync';
-export { getCloudSyncStatus };
-
-let cloudSyncInitialized = false;
+export function getCloudSyncStatus() {
+  return {
+    status: 'connected',
+    lastSyncTimestamp: new Date().toISOString(),
+    gistId: 'local_offline',
+    isEnabled: false,
+    error: null,
+    serverTime: new Date().toISOString()
+  };
+}
 
 export async function getDb(): Promise<Database> {
   if (db) return db;
@@ -69,24 +73,6 @@ export async function getDb(): Promise<Database> {
     }
   } catch (e) {
     console.warn('Gagal membuat direktori data:', e);
-  }
-
-  // If on Vercel and /tmp/spp.db doesn't exist yet, copy from pre-bundled file if present
-  if (isVercel && !fs.existsSync(DB_FILE)) {
-    const bundledCandidates = [
-      path.resolve(process.cwd(), 'server', 'data', 'spp.db'),
-      path.resolve(process.cwd(), 'data', 'spp.db')
-    ];
-    for (const cand of bundledCandidates) {
-      if (fs.existsSync(cand)) {
-        try {
-          fs.copyFileSync(cand, DB_FILE);
-          break;
-        } catch (copyErr) {
-          console.warn('Gagal menyalin bundled db:', copyErr);
-        }
-      }
-    }
   }
 
   const SQL = await loadSqlJsEngine();
@@ -177,47 +163,18 @@ export async function getDb(): Promise<Database> {
     db.run(SCHEMA_SQL);
   }
 
-  // Authoritative Cloud Persistence Sync:
-  // Synchronize with remote persistent store so deletions & updates persist across all lambdas & devices
-  if (!cloudSyncInitialized) {
-    cloudSyncInitialized = true;
-    try {
-      const cloudState = await fetchCloudState();
-      if (cloudState && cloudState.students && cloudState.users) {
-        console.log('[DB] Berhasil memulihkan state terkini dari cloud sync.');
-        await importDatabaseState(cloudState, false);
-        try {
-          db.run('INSERT OR REPLACE INTO system_metadata (key, value, updated_at) VALUES ("is_seeded", "1", datetime("now"))');
-        } catch (_) {}
-      } else {
-        // If cloud state empty, initialize it with current state
-        const currentState = exportDatabaseState();
-        if (currentState.students?.length > 0) {
-          pushCloudState(currentState, true).catch(() => {});
-        }
-      }
-    } catch (csErr) {
-      console.warn('[DB] Peringatan saat inisialisasi cloud sync:', csErr);
-    }
-  }
-
-  await persistDb(false);
+  await persistDb();
   return db;
 }
 
-export async function persistDb(syncToCloud = true): Promise<void> {
+export async function persistDb(): Promise<void> {
   if (!db) return;
   try {
     const data = db.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(DB_FILE, buffer);
-
-    if (syncToCloud) {
-      const state = exportDatabaseState();
-      await pushCloudState(state, true);
-    }
   } catch (err) {
-    console.error('Gagal menyimpan file database ke disk / cloud:', err);
+    console.error('Gagal menyimpan file database ke disk lokal:', err);
   }
 }
 
@@ -285,7 +242,7 @@ export function exportDatabaseState(): Record<string, any[]> {
   return state;
 }
 
-export async function importDatabaseState(state: Record<string, any[]>, syncToCloud = true): Promise<void> {
+export async function importDatabaseState(state: Record<string, any[]>): Promise<void> {
   if (!db) throw new Error('Database belum diinisialisasi');
   
   db.run('PRAGMA foreign_keys = OFF;');
@@ -312,5 +269,5 @@ export async function importDatabaseState(state: Record<string, any[]>, syncToCl
   }
 
   db.run('PRAGMA foreign_keys = ON;');
-  await persistDb(syncToCloud);
+  await persistDb();
 }

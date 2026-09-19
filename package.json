@@ -7,12 +7,11 @@
     "dev": "vite",
     "server": "tsx watch server/src/index.ts",
     "dev:all": "concurrently -k -n \"SERVER,CLIENT\" -c \"cyan,blue\" \"tsx watch server/src/index.ts\" \"vite\"",
-    "build:server": "node scripts/build-server.js",
-    "build": "node scripts/build-server.js && tsc -b && vite build",
+    "start": "tsx server/src/index.ts",
+    "build": "tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.116.0",
     "@types/canvas-confetti": "^1.9.0",
     "@types/qrcode": "^1.5.6",
     "@types/sql.js": "^1.4.11",

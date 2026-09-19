@@ -1,12 +1,11 @@
 import { Router } from 'express';
 import { query, get, run, exportDatabaseState, importDatabaseState, persistDb, getCloudSyncStatus } from '../db/database';
-import { fetchCloudState, pushCloudState } from '../db/cloudSync';
 import { seedDatabase } from '../db/seed';
 import { Transaction, Student, Bill, AuditLog } from '../types';
 
 const router = Router();
 
-// Cloud Sync Status & Force Sync
+// Local Database Status & Save
 router.get('/sync-status', (_req, res) => {
   res.json({
     status: 'ok',
@@ -17,16 +16,10 @@ router.get('/sync-status', (_req, res) => {
 
 router.post('/sync-force', async (_req, res) => {
   try {
-    const cloudState = await fetchCloudState();
-    if (cloudState && cloudState.students) {
-      await importDatabaseState(cloudState, false);
-      return res.json({ message: 'Database berhasil disinkronkan dari cloud', status: getCloudSyncStatus() });
-    }
-    // Otherwise push current state to cloud
-    await pushCloudState(exportDatabaseState(), true);
-    return res.json({ message: 'State lokal berhasil diunggah ke cloud', status: getCloudSyncStatus() });
+    await persistDb();
+    return res.json({ message: 'Database lokal berhasil disimpan ke disk', status: getCloudSyncStatus() });
   } catch (err: any) {
-    return res.status(500).json({ error: 'Gagal sinkronisasi cloud: ' + err.message });
+    return res.status(500).json({ error: 'Gagal menyimpan database lokal: ' + err.message });
   }
 });
 
