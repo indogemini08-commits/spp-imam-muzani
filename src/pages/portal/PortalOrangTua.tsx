@@ -12,7 +12,6 @@ import { formatRupiah, formatDateIndo } from '../../services/terbilang';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useSchool } from '../../context/SchoolContext';
-import { uploadToImamMuzaniPay, isSupabaseConfigured } from '../../lib/supabase';
 
 interface PortalProps {
   onBackToStaffLogin?: () => void;
@@ -42,7 +41,6 @@ export const PortalOrangTua: React.FC<PortalProps> = ({ onBackToStaffLogin }) =>
   const [confirmDate, setConfirmDate] = useState(new Date().toISOString().split('T')[0]);
   const [confirmNotes, setConfirmNotes] = useState('');
   const [confirmProofImage, setConfirmProofImage] = useState<string | null>(null);
-  const [confirmProofFile, setConfirmProofFile] = useState<File | null>(null);
   const [isSubmittingConfirm, setIsSubmittingConfirm] = useState(false);
 
   // Copied bank account state
@@ -97,12 +95,11 @@ export const PortalOrangTua: React.FC<PortalProps> = ({ onBackToStaffLogin }) =>
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      error('Ukuran file bukti maksimal 5 MB');
+    if (file.size > 2 * 1024 * 1024) {
+      error('Ukuran file maksimal 2 MB');
       return;
     }
 
-    setConfirmProofFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       setConfirmProofImage(reader.result as string);
@@ -122,18 +119,6 @@ export const PortalOrangTua: React.FC<PortalProps> = ({ onBackToStaffLogin }) =>
 
     setIsSubmittingConfirm(true);
     try {
-      let finalProofUrl = confirmProofImage || '';
-
-      // Upload ke Supabase Storage Bucket 'ImamMuzaniPay' jika file tersedia & Supabase aktif
-      if (confirmProofFile && isSupabaseConfigured()) {
-        const uploadRes = await uploadToImamMuzaniPay(confirmProofFile, 'proofs');
-        if (uploadRes.success && uploadRes.url) {
-          finalProofUrl = uploadRes.url;
-        } else if (uploadRes.error) {
-          console.warn('Gagal upload ke bucket ImamMuzaniPay, fallback ke data payload:', uploadRes.error);
-        }
-      }
-
       await api.confirmations.submit({
         student_id: portalData.student.id,
         bank_target: confirmBank,
@@ -141,16 +126,15 @@ export const PortalOrangTua: React.FC<PortalProps> = ({ onBackToStaffLogin }) =>
         sender_bank: 'Transfer Bank / ATM',
         amount: parsedAmount,
         payment_date: confirmDate,
-        proof_file: finalProofUrl || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&q=80',
+        proof_file: confirmProofImage || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&q=80',
         notes: confirmNotes
       });
 
-      success('Konfirmasi pembayaran & bukti transfer berhasil dikirim ke sistem! Admin akan segera memverifikasi.');
+      success('Konfirmasi pembayaran berhasil dikirim! Admin akan segera memverifikasi.');
       setConfirmAmount('');
       setConfirmSender('');
       setConfirmNotes('');
       setConfirmProofImage(null);
-      setConfirmProofFile(null);
       // Reload portal data
       await handleLookup(portalData.student.nis);
       setActiveTab('riwayat');

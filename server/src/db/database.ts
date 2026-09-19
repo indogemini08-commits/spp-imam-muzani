@@ -55,6 +55,11 @@ async function loadSqlJsEngine() {
   }
 }
 
+import { fetchCloudState, pushCloudState, getCloudSyncStatus } from './cloudSync';
+export { getCloudSyncStatus };
+
+let cloudSyncInitialized = false;
+
 export async function getDb(): Promise<Database> {
   if (db) return db;
 
@@ -131,7 +136,6 @@ export async function getDb(): Promise<Database> {
         db.run("UPDATE students SET class_name = 'IX', level = 'SMP' WHERE class_name IN ('9A', '9B', '9', 'Kelas 9', 'Kelas 9A', 'Kelas 9B');");
         db.run("UPDATE students SET class_name = 'X', level = 'SMA' WHERE class_name IN ('10 IPA', '10 IPS', '10', 'Kelas 10', 'Kelas 10 IPA');");
       } catch (_) {}
-      // Remove hardcoded user updates to let user freely customize names in RBAC settings
 
       // Auto-heal next transaction and receipt sequences to prevent duplicate constraint collisions
       try {
@@ -162,25 +166,58 @@ export async function getDb(): Promise<Database> {
         }
       } catch (_) {}
 
-      return db;
     } catch (err) {
       console.error('Gagal memuat file database yang ada, membuat database baru:', err);
     }
   }
 
-  db = new SQL.Database();
-  db.run('PRAGMA foreign_keys = ON;');
-  db.run(SCHEMA_SQL);
-  await persistDb();
+  if (!db) {
+    db = new SQL.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    db.run(SCHEMA_SQL);
+  }
+
+  // Authoritative Cloud Persistence Sync:
+  // Synchronize with remote persistent store so deletions & updates persist across all lambdas & devices
+  if (!cloudSyncInitialized) {
+    cloudSyncInitialized = true;
+    try {
+      const cloudState = await fetchCloudState();
+      if (cloudState && cloudState.students && cloudState.users) {
+        console.log('[DB] Berhasil memulihkan state terkini dari cloud sync.');
+        await importDatabaseState(cloudState, false);
+        try {
+          db.run('INSERT OR REPLACE INTO system_metadata (key, value, updated_at) VALUES ("is_seeded", "1", datetime("now"))');
+        } catch (_) {}
+      } else {
+        // If cloud state empty, initialize it with current state
+        const currentState = exportDatabaseState();
+        if (currentState.students?.length > 0) {
+          pushCloudState(currentState, true).catch(() => {});
+        }
+      }
+    } catch (csErr) {
+      console.warn('[DB] Peringatan saat inisialisasi cloud sync:', csErr);
+    }
+  }
+
+  await persistDb(false);
   return db;
 }
 
-export async function persistDb(): Promise<void> {
+export async function persistDb(syncToCloud = true): Promise<void> {
   if (!db) return;
   try {
     const data = db.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(DB_FILE, buffer);
+
+    if (syncToCloud) {
+      const state = exportDatabaseState();
+      pushCloudState(state).catch(err => {
+        console.warn('[DB] Gagal sinkronisasi background ke cloud:', err);
+      });
+    }
   } catch (err) {
     console.error('Gagal menyimpan file database ke disk:', err);
   }
@@ -235,7 +272,8 @@ export function exportDatabaseState(): Record<string, any[]> {
     'payment_confirmations',
     'whatsapp_templates',
     'whatsapp_logs',
-    'audit_logs'
+    'audit_logs',
+    'system_metadata'
   ];
 
   const state: Record<string, any[]> = {};
@@ -249,7 +287,7 @@ export function exportDatabaseState(): Record<string, any[]> {
   return state;
 }
 
-export async function importDatabaseState(state: Record<string, any[]>): Promise<void> {
+export async function importDatabaseState(state: Record<string, any[]>, syncToCloud = true): Promise<void> {
   if (!db) throw new Error('Database belum diinisialisasi');
   
   db.run('PRAGMA foreign_keys = OFF;');
@@ -276,5 +314,5 @@ export async function importDatabaseState(state: Record<string, any[]>): Promise
   }
 
   db.run('PRAGMA foreign_keys = ON;');
-  await persistDb();
+  await persistDb(syncToCloud);
 }

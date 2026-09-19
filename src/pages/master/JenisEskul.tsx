@@ -8,6 +8,7 @@ import { api } from '../../services/api';
 import { EskulType } from '../../types';
 import { formatRupiah } from '../../services/terbilang';
 import { useNotification } from '../../context/NotificationContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 export const JenisEskul: React.FC = () => {
   const [eskuls, setEskuls] = useState<EskulType[]>([]);
@@ -40,10 +41,10 @@ export const JenisEskul: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const handleSync = () => loadData();
-    window.addEventListener('supabase-data-changed', handleSync);
-    return () => window.removeEventListener('supabase-data-changed', handleSync);
   }, []);
+
+  // Realtime multi-device sync
+  useRealtimeSync(loadData);
 
   const handleOpenAdd = () => {
     setFormData({
@@ -119,16 +120,16 @@ export const JenisEskul: React.FC = () => {
       </div>
 
       <GlassCard className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+        <div className="overflow-x-auto overscroll-x-contain -webkit-overflow-scrolling-touch">
+          <table className="w-full min-w-[650px] text-xs text-left">
             <thead className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="py-3 px-4 w-12 text-center">No</th>
                 <th className="py-3 px-4">Nama Eskul</th>
-                <th className="py-3 px-4 hidden md:table-cell">Keterangan</th>
+                <th className="py-3 px-4">Keterangan</th>
                 <th className="py-3 px-4 text-right">Tarif Iuran</th>
-                <th className="py-3 px-4 text-center hidden sm:table-cell">Periode</th>
-                <th className="py-3 px-4 text-center">Santri</th>
+                <th className="py-3 px-4 text-center">Periode Tagihan</th>
+                <th className="py-3 px-4 text-center">Santri Terdaftar</th>
                 <th className="py-3 px-4 text-center">Status</th>
                 <th className="py-3 px-4 text-center">Aksi</th>
               </tr>
@@ -150,32 +151,27 @@ export const JenisEskul: React.FC = () => {
                 eskuls.map((e, idx) => (
                   <tr key={e.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="py-3 px-4 text-center font-medium text-slate-400">{idx + 1}</td>
-                    <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                          <Dumbbell className="w-3.5 h-3.5" />
-                        </div>
-                        <div>
-                          <div>{e.name}</div>
-                          <div className="text-[11px] text-slate-500 font-normal md:hidden line-clamp-1">{e.description || ''}</div>
-                        </div>
+                    <td className="py-3 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                        <Dumbbell className="w-3.5 h-3.5" />
                       </div>
+                      <span>{e.name}</span>
                     </td>
-                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300 max-w-xs hidden md:table-cell">
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300 max-w-xs">
                       {e.description || '-'}
                     </td>
-                    <td className="py-3 px-4 text-right font-bold text-brand-600 dark:text-brand-400 text-sm whitespace-nowrap">
+                    <td className="py-3 px-4 text-right font-bold text-brand-600 dark:text-brand-400 text-sm">
                       {formatRupiah(e.amount)}
                     </td>
-                    <td className="py-3 px-4 text-center hidden sm:table-cell">
-                      <span className="capitalize px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                    <td className="py-3 px-4 text-center">
+                      <span className="capitalize px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                         {e.billing_period === 'monthly' ? 'Bulanan' : e.billing_period === 'semester' ? 'Per Semester' : 'Tahunan'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-center font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                    <td className="py-3 px-4 text-center font-bold text-slate-800 dark:text-slate-200">
                       <span className="inline-flex items-center gap-1">
                         <Users className="w-3.5 h-3.5 text-blue-500" />
-                        <span>{e.student_count || 0}</span>
+                        <span>{e.student_count || 0} Santri</span>
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">

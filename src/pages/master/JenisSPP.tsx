@@ -8,6 +8,7 @@ import { api } from '../../services/api';
 import { SPPType } from '../../types';
 import { formatRupiah } from '../../services/terbilang';
 import { useNotification } from '../../context/NotificationContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 export const JenisSPP: React.FC = () => {
   const [types, setTypes] = useState<SPPType[]>([]);
@@ -44,10 +45,10 @@ export const JenisSPP: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const handleSync = () => loadData();
-    window.addEventListener('supabase-data-changed', handleSync);
-    return () => window.removeEventListener('supabase-data-changed', handleSync);
   }, []);
+
+  // Realtime multi-device sync
+  useRealtimeSync(loadData);
 
   const handleOpenAdd = () => {
     setFormData({
@@ -136,16 +137,16 @@ export const JenisSPP: React.FC = () => {
 
       {/* Table */}
       <GlassCard className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+        <div className="overflow-x-auto overscroll-x-contain -webkit-overflow-scrolling-touch">
+          <table className="w-full min-w-[700px] text-xs text-left">
             <thead className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="py-3 px-4 w-12 text-center">No</th>
                 <th className="py-3 px-4">Nama Jenis SPP</th>
-                <th className="py-3 px-4 hidden md:table-cell">Keterangan / Fasilitas</th>
+                <th className="py-3 px-4">Keterangan / Fasilitas</th>
                 <th className="py-3 px-4 text-right">Tarif / Bulan</th>
-                <th className="py-3 px-4 text-center hidden sm:table-cell">Bulan Aktif</th>
-                <th className="py-3 px-4 text-center">Santri</th>
+                <th className="py-3 px-4 text-center">Bulan Aktif</th>
+                <th className="py-3 px-4 text-center">Santri Terdaftar</th>
                 <th className="py-3 px-4 text-center">Status</th>
                 <th className="py-3 px-4 text-center">Aksi</th>
               </tr>
@@ -167,25 +168,24 @@ export const JenisSPP: React.FC = () => {
                 types.map((t, idx) => (
                   <tr key={t.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="py-3 px-4 text-center font-medium text-slate-400">{idx + 1}</td>
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900 dark:text-white">{t.name}</div>
-                      <div className="text-[11px] text-slate-500 md:hidden mt-0.5 line-clamp-1">{t.description || ''}</div>
+                    <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                      {t.name}
                     </td>
-                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300 max-w-xs hidden md:table-cell">
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300 max-w-xs">
                       {t.description || '-'}
                     </td>
-                    <td className="py-3 px-4 text-right font-bold text-brand-600 dark:text-brand-400 text-sm whitespace-nowrap">
+                    <td className="py-3 px-4 text-right font-bold text-brand-600 dark:text-brand-400 text-sm">
                       {formatRupiah(t.monthly_amount)}
                     </td>
-                    <td className="py-3 px-4 text-center hidden sm:table-cell">
-                      <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-medium border border-slate-200 dark:border-slate-700 whitespace-nowrap">
-                        {t.active_months?.length || 12} Bulan
+                    <td className="py-3 px-4 text-center">
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-medium border border-slate-200 dark:border-slate-700">
+                        {t.active_months?.length || 12} Bulan (Juli–Juni)
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                    <td className="py-3 px-4 text-center">
                       <span className="inline-flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200">
                         <Users className="w-3.5 h-3.5 text-blue-500" />
-                        <span>{t.student_count || 0}</span>
+                        <span>{t.student_count || 0} Santri</span>
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">

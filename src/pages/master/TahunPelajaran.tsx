@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { api } from '../../services/api';
 import { AcademicYear } from '../../types';
 import { useNotification } from '../../context/NotificationContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 export const TahunPelajaran: React.FC = () => {
   const [years, setYears] = useState<AcademicYear[]>([]);
@@ -40,6 +41,9 @@ export const TahunPelajaran: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Realtime multi-device sync
+  useRealtimeSync(loadData);
 
   const handleSetActive = async (id: string, name: string) => {
     try {
@@ -122,8 +126,8 @@ export const TahunPelajaran: React.FC = () => {
 
       {/* Table Tahun Pelajaran */}
       <GlassCard className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+        <div className="overflow-x-auto overscroll-x-contain -webkit-overflow-scrolling-touch">
+          <table className="w-full min-w-[650px] text-xs text-left">
             <thead className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="py-3 px-4 w-12 text-center">No</th>

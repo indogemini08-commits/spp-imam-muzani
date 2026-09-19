@@ -9,6 +9,7 @@ import { AnnualBillType, AnnualBillPackage } from '../../types';
 import { formatRupiah, formatDateIndo } from '../../services/terbilang';
 import { useNotification } from '../../context/NotificationContext';
 import { useAvailableClasses } from '../../context/SchoolContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 export const TagihanTahunan: React.FC = () => {
   const availableClasses = useAvailableClasses();
@@ -53,10 +54,10 @@ export const TagihanTahunan: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const handleSync = () => loadData();
-    window.addEventListener('supabase-data-changed', handleSync);
-    return () => window.removeEventListener('supabase-data-changed', handleSync);
   }, []);
+
+  // Realtime multi-device sync
+  useRealtimeSync(loadData);
 
   const handleOpenAdd = () => {
     setFormData({
@@ -235,8 +236,8 @@ export const TagihanTahunan: React.FC = () => {
 
       {/* Table Item Pos Tagihan Tahunan */}
       <GlassCard className="p-0 overflow-hidden border border-slate-200/80 dark:border-slate-800">
-        <div className="w-full overflow-x-auto lg:overflow-x-hidden">
-          <table className="w-full table-auto text-xs text-left border-collapse">
+        <div className="w-full overflow-x-auto overscroll-x-contain -webkit-overflow-scrolling-touch">
+          <table className="w-full min-w-[750px] table-auto text-xs text-left border-collapse">
             <thead className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="py-2.5 px-2 w-10 text-center whitespace-nowrap">No</th>

@@ -34,6 +34,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { KwitansiModal } from '../../components/kwitansi/KwitansiModal';
 import { WhatsAppModal } from '../../components/whatsapp/WhatsAppModal';
 import { useAvailableClasses } from '../../context/SchoolContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import * as XLSX from 'xlsx';
 
 export const DataSantri: React.FC = () => {
@@ -185,19 +186,14 @@ export const DataSantri: React.FC = () => {
   }, [selectedClass, selectedSpp, selectedStatus]);
 
   useEffect(() => {
-    const handleSync = () => {
-      loadData();
-    };
-    window.addEventListener('supabase-data-changed', handleSync);
-    return () => window.removeEventListener('supabase-data-changed', handleSync);
-  }, []);
-
-  useEffect(() => {
     const timer = setTimeout(() => {
       loadData();
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // Realtime multi-device sync
+  useRealtimeSync(loadData);
 
   // Open Add Modal
   const handleOpenAdd = () => {
@@ -729,8 +725,8 @@ export const DataSantri: React.FC = () => {
 
       {/* Table Data Santri */}
       <GlassCard className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
+        <div className="overflow-x-auto overscroll-x-contain -webkit-overflow-scrolling-touch">
+          <table className="w-full min-w-[880px] text-xs text-left border-collapse">
             <thead className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="py-2.5 px-2 w-8 text-center whitespace-nowrap">
@@ -744,11 +740,11 @@ export const DataSantri: React.FC = () => {
                 </th>
                 <th className="py-2.5 px-1.5 w-8 text-center whitespace-nowrap">No</th>
                 <th className="py-2.5 px-2.5 whitespace-nowrap">Santri</th>
-                <th className="py-2.5 px-2 text-center whitespace-nowrap">Kelas</th>
+                <th className="py-2.5 px-2 text-center whitespace-nowrap">Kelas / Jenjang</th>
                 <th className="py-2.5 px-2 whitespace-nowrap">Jenis SPP</th>
-                <th className="py-2.5 px-2 whitespace-nowrap hidden lg:table-cell">Eskul Diikuti</th>
-                <th className="py-2.5 px-2 text-right whitespace-nowrap hidden md:table-cell">Tunggakan Lalu</th>
-                <th className="py-2.5 px-2 whitespace-nowrap hidden sm:table-cell">WhatsApp Wali</th>
+                <th className="py-2.5 px-2 whitespace-nowrap">Eskul Diikuti</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">Tunggakan Lalu</th>
+                <th className="py-2.5 px-2 whitespace-nowrap">WhatsApp Wali</th>
                 <th className="py-2.5 px-1.5 text-center whitespace-nowrap">Status</th>
                 <th className="py-2.5 px-1.5 text-center whitespace-nowrap">Aksi</th>
               </tr>
@@ -809,7 +805,7 @@ export const DataSantri: React.FC = () => {
                           {formatRupiah(s.spp_amount)}/bln
                         </div>
                       </td>
-                      <td className="py-2.5 px-2 whitespace-nowrap hidden lg:table-cell">
+                      <td className="py-2.5 px-2 whitespace-nowrap">
                         {s.eskul_names && s.eskul_names.length > 0 ? (
                           <div className="flex flex-wrap items-center gap-1 whitespace-nowrap">
                             {s.eskul_names.map((eName: string, eIdx: number) => (
@@ -822,7 +818,7 @@ export const DataSantri: React.FC = () => {
                           <span className="text-slate-400 text-[10px] whitespace-nowrap">Tidak ada eskul</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-2 text-right whitespace-nowrap hidden md:table-cell">
+                      <td className="py-2.5 px-2 text-right whitespace-nowrap">
                         {s.previous_arrears && s.previous_arrears > 0 ? (
                           <div className="whitespace-nowrap">
                             <span className="font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
@@ -838,7 +834,7 @@ export const DataSantri: React.FC = () => {
                           <span className="text-slate-400 font-mono whitespace-nowrap">-</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-2 whitespace-nowrap hidden sm:table-cell">
+                      <td className="py-2.5 px-2 whitespace-nowrap">
                         <div className="flex items-center gap-1 font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap text-xs">
                           <Phone className="w-3 h-3 text-emerald-500 shrink-0" />
                           <span>{s.parent_phone}</span>

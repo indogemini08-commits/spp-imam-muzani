@@ -28,7 +28,6 @@ import { api } from '../../services/api';
 import { SchoolSettings, BankAccountSetting } from '../../types';
 import { useNotification } from '../../context/NotificationContext';
 import { useSchool, DEFAULT_AVAILABLE_CLASSES } from '../../context/SchoolContext';
-import { uploadToImamMuzaniPay, isSupabaseConfigured } from '../../lib/supabase';
 
 export const DataSekolah: React.FC = () => {
   const { settings: globalSettings, updateSettings } = useSchool();
@@ -98,7 +97,7 @@ export const DataSekolah: React.FC = () => {
     }
   }, [globalSettings]);
 
-  const handleFileUpload = async (
+  const handleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     field: 'app_logo_url' | 'logo_url',
     label: string
@@ -111,24 +110,12 @@ export const DataSekolah: React.FC = () => {
       return;
     }
 
-    // Max 5 MB
-    if (file.size > 5 * 1024 * 1024) {
-      error('Ukuran file terlalu besar! Maksimal 5 MB');
+    // Max 2.5 MB
+    if (file.size > 2.5 * 1024 * 1024) {
+      error('Ukuran file terlalu besar! Maksimal 2.5 MB');
       return;
     }
 
-    // Jika Supabase aktif, upload langsung ke bucket Storage ImamMuzaniPay
-    if (isSupabaseConfigured()) {
-      const uploadRes = await uploadToImamMuzaniPay(file, 'logos');
-      if (uploadRes.success && uploadRes.url && settings) {
-        setSettings({ ...settings, [field]: uploadRes.url });
-        success(`${label} berhasil diunggah ke Storage ImamMuzaniPay. Klik "Simpan Perubahan" untuk menerapkan.`);
-        e.target.value = '';
-        return;
-      }
-    }
-
-    // Fallback lokal FileReader base64
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target?.result as string;

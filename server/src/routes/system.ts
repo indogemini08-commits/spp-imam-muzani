@@ -1,9 +1,34 @@
 import { Router } from 'express';
-import { query, get, run, exportDatabaseState, importDatabaseState, persistDb } from '../db/database';
+import { query, get, run, exportDatabaseState, importDatabaseState, persistDb, getCloudSyncStatus } from '../db/database';
+import { fetchCloudState, pushCloudState } from '../db/cloudSync';
 import { seedDatabase } from '../db/seed';
 import { Transaction, Student, Bill, AuditLog } from '../types';
 
 const router = Router();
+
+// Cloud Sync Status & Force Sync
+router.get('/sync-status', (_req, res) => {
+  res.json({
+    status: 'ok',
+    ...getCloudSyncStatus(),
+    serverTime: new Date().toISOString()
+  });
+});
+
+router.post('/sync-force', async (_req, res) => {
+  try {
+    const cloudState = await fetchCloudState();
+    if (cloudState && cloudState.students) {
+      await importDatabaseState(cloudState, false);
+      return res.json({ message: 'Database berhasil disinkronkan dari cloud', status: getCloudSyncStatus() });
+    }
+    // Otherwise push current state to cloud
+    await pushCloudState(exportDatabaseState(), true);
+    return res.json({ message: 'State lokal berhasil diunggah ke cloud', status: getCloudSyncStatus() });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Gagal sinkronisasi cloud: ' + err.message });
+  }
+});
 
 // Dashboard Summary & Charts
 router.get('/dashboard-stats', (req, res) => {
@@ -280,7 +305,7 @@ router.post('/reset-demo', async (req, res) => {
       'users', 'school_settings', 'academic_years', 'spp_types', 'eskul_types',
       'annual_bill_types', 'annual_bill_packages', 'students', 'bills',
       'transactions', 'transaction_items', 'payment_confirmations',
-      'whatsapp_templates', 'whatsapp_logs', 'audit_logs'
+      'whatsapp_templates', 'whatsapp_logs', 'audit_logs', 'system_metadata'
     ];
 
     for (const t of tables) {

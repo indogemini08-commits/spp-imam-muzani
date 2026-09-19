@@ -47,7 +47,7 @@ export const Modal: React.FC<ModalProps> = ({
     : maxWidthClasses[maxWidth] || 'max-w-2xl';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto overflow-x-hidden flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto overflow-x-hidden flex items-center justify-center p-2.5 sm:p-6 animate-in fade-in duration-200">
       {/* Backdrop */}
       <div
         onClick={onClose}
@@ -57,7 +57,7 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Modal Dialog Card */}
       <div
         className={`
-          relative w-full ${resolvedMaxWidth} my-8
+          relative w-full ${resolvedMaxWidth} my-auto sm:my-8
           bg-white/95 dark:bg-slate-900/95
           border border-slate-200/80 dark:border-slate-800/80
           rounded-2xl shadow-2xl backdrop-blur-2xl
@@ -65,9 +65,9 @@ export const Modal: React.FC<ModalProps> = ({
         `}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/30">
+        <div className="flex items-start justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/30">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug">
               {title}
             </h3>
             {subtitle && (
@@ -85,7 +85,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 max-h-[80vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 max-h-[85vh] sm:max-h-[80vh] overflow-y-auto overscroll-contain">
           {children}
         </div>
       </div>

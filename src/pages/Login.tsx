@@ -49,17 +49,17 @@ export const Login: React.FC<LoginProps> = ({ onOpenParentPortal }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-12 relative overflow-hidden selection:bg-brand-500 selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-3 sm:p-6 lg:p-12 relative overflow-hidden selection:bg-brand-500 selection:text-white">
       {/* Background ambient glowing orbs */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10 my-auto">
         {/* Left Side: Brand Identity & Highlights */}
-        <div className="lg:col-span-6 space-y-6">
+        <div className="lg:col-span-6 space-y-4 sm:space-y-6">
           {/* Logo & Institution Header */}
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-900 via-indigo-700 to-blue-600 flex items-center justify-center text-white font-extrabold text-2xl shadow-xl shadow-blue-950/40 border border-blue-400/30 overflow-hidden shrink-0">
+          <div className="flex items-center gap-3.5 sm:gap-4">
+            <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-blue-900 via-indigo-700 to-blue-600 flex items-center justify-center text-white font-extrabold text-xl sm:text-2xl shadow-xl shadow-blue-950/40 border border-blue-400/30 overflow-hidden shrink-0">
               {settings?.app_logo_url ? (
                 <img src={settings.app_logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
               ) : (
@@ -67,21 +67,21 @@ export const Login: React.FC<LoginProps> = ({ onOpenParentPortal }) => {
               )}
             </div>
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-semibold mb-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] sm:text-[11px] font-semibold mb-1">
                 <Sparkles className="w-3 h-3 text-blue-400" />
                 <span>Sistem Informasi Keuangan Terpadu</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+              <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
                 APLIKASI SPP SEKOLAH
               </h1>
-              <p className="text-sm text-slate-300 font-medium">
+              <p className="text-xs sm:text-sm text-slate-300 font-medium">
                 {settings?.name || 'Imam Muzani Boarding School'}
               </p>
             </div>
           </div>
 
-          {/* School Motto / Hadith Card */}
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+          {/* School Motto / Hadith Card - hidden on mobile to prioritize login form */}
+          <div className="hidden lg:block p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
             <div className="flex items-start gap-3">
               <BookOpen className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
               <div>
@@ -93,8 +93,8 @@ export const Login: React.FC<LoginProps> = ({ onOpenParentPortal }) => {
             </div>
           </div>
 
-          {/* 3 Feature Highlights */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* 3 Feature Highlights - hidden on mobile to prioritize login form */}
+          <div className="hidden lg:grid grid-cols-3 gap-3">
             <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
               <Receipt className="w-5 h-5 text-blue-400 mb-1.5" />
               <h4 className="text-xs font-bold text-white leading-tight">Billing Engine</h4>
@@ -115,19 +115,19 @@ export const Login: React.FC<LoginProps> = ({ onOpenParentPortal }) => {
           </div>
 
           {/* Parent Self-Check Portal Banner */}
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-950/80 to-indigo-950/80 border border-blue-500/30 flex items-center justify-between gap-4">
+          <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-blue-950/80 to-indigo-950/80 border border-blue-500/30 flex items-center justify-between gap-3 sm:gap-4">
             <div className="min-w-0">
               <h4 className="text-xs font-bold text-blue-300">
-                Akses Mandiri Orang Tua / Wali Santri
+                Akses Mandiri Orang Tua / Wali
               </h4>
-              <p className="text-[11px] text-blue-200/70 truncate">
-                Cek tagihan SPP, riwayat kwitansi & konfirmasi transfer cukup masukkan NIS
+              <p className="text-[10px] sm:text-[11px] text-blue-200/70 truncate">
+                Cek tagihan SPP & kwitansi cukup masukkan NIS
               </p>
             </div>
             <button
               type="button"
               onClick={onOpenParentPortal}
-              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-md shadow-blue-600/30 transition-all"
+              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-md shadow-blue-600/30 transition-all cursor-pointer"
             >
               <span>Cek NIS</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -137,7 +137,7 @@ export const Login: React.FC<LoginProps> = ({ onOpenParentPortal }) => {
 
         {/* Right Side: Floating Glass Login Card */}
         <div className="lg:col-span-6">
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl shadow-black/70 relative">
+          <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl sm:rounded-3xl p-5 sm:p-8 backdrop-blur-2xl shadow-2xl shadow-black/70 relative">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[11px] font-semibold mb-2">

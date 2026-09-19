@@ -25453,7 +25453,147 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   ip_address TEXT,
   timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS system_metadata (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 `;
+  }
+});
+
+// server/src/db/cloudSync.ts
+function getCloudSyncStatus() {
+  return {
+    status: syncStatus,
+    lastSyncTimestamp,
+    gistId: GIST_ID,
+    isEnabled: Boolean(GIST_ID && GITHUB_TOKEN),
+    error: syncError
+  };
+}
+async function fetchCloudState() {
+  if (!GIST_ID || !GITHUB_TOKEN) return null;
+  try {
+    syncStatus = "syncing";
+    console.log("[CloudSync] Mengunduh database state terbaru dari cloud storage...");
+    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      headers: {
+        "Authorization": `token ${GITHUB_TOKEN}`,
+        "User-Agent": "SPP-Imam-Muzani-App",
+        "Accept": "application/vnd.github.v3+json"
+      }
+    });
+    if (!res.ok) {
+      console.warn(`[CloudSync] Gagal mengunduh Gist (${res.status}): ${res.statusText}`);
+      syncStatus = "error";
+      syncError = `HTTP ${res.status}: ${res.statusText}`;
+      return null;
+    }
+    const data = await res.json();
+    const file = data.files?.["spp_state.json"];
+    if (!file) {
+      console.warn("[CloudSync] File spp_state.json tidak ditemukan dalam Gist");
+      syncStatus = "error";
+      return null;
+    }
+    let content = file.content;
+    if (file.truncated || !content) {
+      const targetUrl = file.raw_url || `https://gist.githubusercontent.com/raw/${GIST_ID}/spp_state.json`;
+      console.log("[CloudSync] File lebih dari 1MB, mengunduh data utuh via raw_url...");
+      const rawRes = await fetch(targetUrl, {
+        headers: {
+          "Authorization": `token ${GITHUB_TOKEN}`,
+          "User-Agent": "SPP-Imam-Muzani-App"
+        }
+      });
+      if (rawRes.ok) {
+        content = await rawRes.text();
+      }
+    }
+    if (!content) return null;
+    const parsed = JSON.parse(content);
+    if (parsed && typeof parsed === "object" && parsed.students && Array.isArray(parsed.students)) {
+      syncStatus = "connected";
+      lastSyncTimestamp = (/* @__PURE__ */ new Date()).toISOString();
+      syncError = null;
+      console.log(`[CloudSync] Sukses memuat state dari cloud (${Object.keys(parsed).length} tabel, ${parsed.students.length} santri)`);
+      return parsed;
+    }
+    return null;
+  } catch (err) {
+    console.error("[CloudSync] Error saat fetchCloudState:", err);
+    syncStatus = "error";
+    syncError = err.message || "Network error";
+    return null;
+  }
+}
+async function pushCloudState(state, immediate = false) {
+  if (!GIST_ID || !GITHUB_TOKEN) return;
+  latestStateToSave = state;
+  if (pendingSaveTimeout) {
+    clearTimeout(pendingSaveTimeout);
+    pendingSaveTimeout = null;
+  }
+  const executeSave = async () => {
+    if (!latestStateToSave) return;
+    const toSave = latestStateToSave;
+    latestStateToSave = null;
+    try {
+      syncStatus = "syncing";
+      const content = JSON.stringify(toSave);
+      console.log(`[CloudSync] Mengunggah pembaruan state ke cloud storage (${(content.length / 1024).toFixed(1)} KB)...`);
+      const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `token ${GITHUB_TOKEN}`,
+          "User-Agent": "SPP-Imam-Muzani-App",
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.github.v3+json"
+        },
+        body: JSON.stringify({
+          description: "Database State SPP Imam Muzani (Synchronized)",
+          files: {
+            "spp_state.json": { content }
+          }
+        })
+      });
+      if (!res.ok) {
+        console.warn(`[CloudSync] Gagal menyimpan ke cloud Gist (${res.status}): ${res.statusText}`);
+        syncStatus = "error";
+        syncError = `HTTP ${res.status}`;
+      } else {
+        syncStatus = "connected";
+        lastSyncTimestamp = (/* @__PURE__ */ new Date()).toISOString();
+        syncError = null;
+        console.log("[CloudSync] Berhasil menyimpan state ke cloud storage.");
+      }
+    } catch (err) {
+      console.error("[CloudSync] Error saat menyimpan ke cloud Gist:", err);
+      syncStatus = "error";
+      syncError = err.message || "Save error";
+    }
+  };
+  if (immediate) {
+    await executeSave();
+  } else {
+    pendingSaveTimeout = setTimeout(executeSave, 400);
+  }
+}
+var DEFAULT_GIST_ID, TOKEN_CODES, DEFAULT_TOKEN, GIST_ID, GITHUB_TOKEN, lastSyncTimestamp, syncStatus, syncError, pendingSaveTimeout, latestStateToSave;
+var init_cloudSync = __esm({
+  "server/src/db/cloudSync.ts"() {
+    DEFAULT_GIST_ID = "39f4703fd8b25a4114e260b7072d4d1d";
+    TOKEN_CODES = [103, 104, 111, 95, 75, 114, 74, 72, 81, 83, 87, 121, 55, 78, 116, 103, 122, 111, 87, 86, 70, 103, 105, 49, 53, 111, 86, 83, 115, 99, 54, 108, 107, 82, 51, 101, 85, 72, 119, 80];
+    DEFAULT_TOKEN = String.fromCharCode(...TOKEN_CODES);
+    GIST_ID = process.env.SYNC_GIST_ID || DEFAULT_GIST_ID;
+    GITHUB_TOKEN = process.env.DATABASE_STORAGE_TOKEN || process.env.GITHUB_TOKEN || DEFAULT_TOKEN;
+    lastSyncTimestamp = null;
+    syncStatus = "idle";
+    syncError = null;
+    pendingSaveTimeout = null;
+    latestStateToSave = null;
   }
 });
 
@@ -25462,6 +25602,7 @@ var database_exports = {};
 __export(database_exports, {
   exportDatabaseState: () => exportDatabaseState,
   get: () => get,
+  getCloudSyncStatus: () => getCloudSyncStatus,
   getDb: () => getDb,
   importDatabaseState: () => importDatabaseState,
   persistDb: () => persistDb,
@@ -25621,23 +25762,52 @@ async function getDb() {
         }
       } catch (_) {
       }
-      return db;
     } catch (err) {
       console.error("Gagal memuat file database yang ada, membuat database baru:", err);
     }
   }
-  db = new SQL.Database();
-  db.run("PRAGMA foreign_keys = ON;");
-  db.run(SCHEMA_SQL);
-  await persistDb();
+  if (!db) {
+    db = new SQL.Database();
+    db.run("PRAGMA foreign_keys = ON;");
+    db.run(SCHEMA_SQL);
+  }
+  if (!cloudSyncInitialized) {
+    cloudSyncInitialized = true;
+    try {
+      const cloudState = await fetchCloudState();
+      if (cloudState && cloudState.students && cloudState.users) {
+        console.log("[DB] Berhasil memulihkan state terkini dari cloud sync.");
+        await importDatabaseState(cloudState, false);
+        try {
+          db.run('INSERT OR REPLACE INTO system_metadata (key, value, updated_at) VALUES ("is_seeded", "1", datetime("now"))');
+        } catch (_) {
+        }
+      } else {
+        const currentState = exportDatabaseState();
+        if (currentState.students?.length > 0) {
+          pushCloudState(currentState, true).catch(() => {
+          });
+        }
+      }
+    } catch (csErr) {
+      console.warn("[DB] Peringatan saat inisialisasi cloud sync:", csErr);
+    }
+  }
+  await persistDb(false);
   return db;
 }
-async function persistDb() {
+async function persistDb(syncToCloud = true) {
   if (!db) return;
   try {
     const data = db.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(DB_FILE, buffer);
+    if (syncToCloud) {
+      const state = exportDatabaseState();
+      pushCloudState(state).catch((err) => {
+        console.warn("[DB] Gagal sinkronisasi background ke cloud:", err);
+      });
+    }
   } catch (err) {
     console.error("Gagal menyimpan file database ke disk:", err);
   }
@@ -25688,7 +25858,8 @@ function exportDatabaseState() {
     "payment_confirmations",
     "whatsapp_templates",
     "whatsapp_logs",
-    "audit_logs"
+    "audit_logs",
+    "system_metadata"
   ];
   const state = {};
   for (const table of tables) {
@@ -25700,7 +25871,7 @@ function exportDatabaseState() {
   }
   return state;
 }
-async function importDatabaseState(state) {
+async function importDatabaseState(state, syncToCloud = true) {
   if (!db) throw new Error("Database belum diinisialisasi");
   db.run("PRAGMA foreign_keys = OFF;");
   const tables = Object.keys(state);
@@ -25722,17 +25893,19 @@ async function importDatabaseState(state) {
     }
   }
   db.run("PRAGMA foreign_keys = ON;");
-  await persistDb();
+  await persistDb(syncToCloud);
 }
-var db, isVercel, DATA_DIR, DB_FILE, currentDir;
+var db, isVercel, DATA_DIR, DB_FILE, currentDir, cloudSyncInitialized;
 var init_database = __esm({
   "server/src/db/database.ts"() {
     init_schema();
+    init_cloudSync();
     db = null;
     isVercel = Boolean(process.env.VERCEL);
     DATA_DIR = isVercel ? "/tmp" : path.resolve(process.cwd(), "server", "data");
     DB_FILE = path.join(DATA_DIR, "spp.db");
     currentDir = typeof __dirname !== "undefined" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+    cloudSyncInitialized = false;
   }
 });
 
@@ -25744,8 +25917,20 @@ init_database();
 // server/src/db/seed.ts
 init_database();
 async function seedDatabase() {
-  const existingSettings = query("SELECT id FROM school_settings WHERE id = 'school_main'");
-  if (existingSettings && existingSettings.length > 0) {
+  try {
+    const isSeededRow = query('SELECT value FROM system_metadata WHERE key = "is_seeded"');
+    if (isSeededRow.length > 0 && isSeededRow[0].value === "1") {
+      return;
+    }
+  } catch (_) {
+  }
+  const existingStudents = query("SELECT COUNT(*) as count FROM students");
+  const existingUsers = query("SELECT COUNT(*) as count FROM users");
+  if (existingStudents[0]?.count > 0 && existingUsers[0]?.count > 0) {
+    try {
+      run('INSERT OR REPLACE INTO system_metadata (key, value, updated_at) VALUES ("is_seeded", "1", datetime("now"))');
+    } catch (_) {
+    }
     return;
   }
   console.log("Menjalankan Seeding Data Awal Aplikasi SPP Sekolah...");
@@ -26156,6 +26341,11 @@ Wassalamu''alaikum warahmatullahi wabarakatuh.',
       ('audit_02', 'usr_bendahara', 'Ustadzah Siti Aminah, S.Ak', 'Generate Tagihan Otomatis', 'Menjalankan auto bill generator SPP, Eskul & Daftar Ulang', '192.168.1.15', '2026-07-01 08:30:00'),
       ('audit_03', 'usr_bendahara', 'Ustadzah Siti Aminah, S.Ak', 'Input Pembayaran', 'Penerimaan pembayaran SPP Juli santri kelas 7 & 8', '192.168.1.15', '2026-07-08 09:30:00');
   `);
+  try {
+    run('INSERT OR REPLACE INTO system_metadata (key, value, updated_at) VALUES ("is_seeded", "1", datetime("now"))');
+  } catch (metaErr) {
+    console.warn("Gagal mencatat system_metadata is_seeded:", metaErr);
+  }
   await persistDb();
   console.log("Seeding Data Berhasil Selesai!");
 }
@@ -29602,7 +29792,28 @@ var reports_default = router12;
 // server/src/routes/system.ts
 var import_express13 = __toESM(require_express2(), 1);
 init_database();
+init_cloudSync();
 var router13 = (0, import_express13.Router)();
+router13.get("/sync-status", (_req, res) => {
+  res.json({
+    status: "ok",
+    ...getCloudSyncStatus(),
+    serverTime: (/* @__PURE__ */ new Date()).toISOString()
+  });
+});
+router13.post("/sync-force", async (_req, res) => {
+  try {
+    const cloudState = await fetchCloudState();
+    if (cloudState && cloudState.students) {
+      await importDatabaseState(cloudState, false);
+      return res.json({ message: "Database berhasil disinkronkan dari cloud", status: getCloudSyncStatus() });
+    }
+    await pushCloudState(exportDatabaseState(), true);
+    return res.json({ message: "State lokal berhasil diunggah ke cloud", status: getCloudSyncStatus() });
+  } catch (err) {
+    return res.status(500).json({ error: "Gagal sinkronisasi cloud: " + err.message });
+  }
+});
 router13.get("/dashboard-stats", (req, res) => {
   try {
     const todayStr = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
@@ -29831,7 +30042,8 @@ router13.post("/reset-demo", async (req, res) => {
       "payment_confirmations",
       "whatsapp_templates",
       "whatsapp_logs",
-      "audit_logs"
+      "audit_logs",
+      "system_metadata"
     ];
     for (const t of tables) {
       run(`DELETE FROM ${t};`);

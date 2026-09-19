@@ -1,9 +1,21 @@
 import { query, run, persistDb } from './database';
 
 export async function seedDatabase(): Promise<void> {
-  const existingSettings = query("SELECT id FROM school_settings WHERE id = 'school_main'");
-  if (existingSettings && existingSettings.length > 0) {
-    return; // Database sudah diinisialisasi sebelumnya. Jangan pernah me-reseed data yang telah dihapus pengguna!
+  try {
+    const isSeededRow = query<{ value: string }>('SELECT value FROM system_metadata WHERE key = "is_seeded"');
+    if (isSeededRow.length > 0 && isSeededRow[0].value === '1') {
+      return; // Database has already been seeded once. Never re-seed user deletions!
+    }
+  } catch (_) {}
+
+  const existingStudents = query('SELECT COUNT(*) as count FROM students');
+  const existingUsers = query('SELECT COUNT(*) as count FROM users');
+
+  if (existingStudents[0]?.count > 0 && existingUsers[0]?.count > 0) {
+    try {
+      run('INSERT OR REPLACE INTO system_metadata (key, value, updated_at) VALUES ("is_seeded", "1", datetime("now"))');
+    } catch (_) {}
+    return; // Already fully seeded
   }
 
   console.log('Menjalankan Seeding Data Awal Aplikasi SPP Sekolah...');
@@ -467,6 +479,12 @@ Wassalamu''alaikum warahmatullahi wabarakatuh.',
       ('audit_02', 'usr_bendahara', 'Ustadzah Siti Aminah, S.Ak', 'Generate Tagihan Otomatis', 'Menjalankan auto bill generator SPP, Eskul & Daftar Ulang', '192.168.1.15', '2026-07-01 08:30:00'),
       ('audit_03', 'usr_bendahara', 'Ustadzah Siti Aminah, S.Ak', 'Input Pembayaran', 'Penerimaan pembayaran SPP Juli santri kelas 7 & 8', '192.168.1.15', '2026-07-08 09:30:00');
   `);
+
+  try {
+    run('INSERT OR REPLACE INTO system_metadata (key, value, updated_at) VALUES ("is_seeded", "1", datetime("now"))');
+  } catch (metaErr) {
+    console.warn('Gagal mencatat system_metadata is_seeded:', metaErr);
+  }
 
   await persistDb();
   console.log('Seeding Data Berhasil Selesai!');
