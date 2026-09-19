@@ -1,4 +1,6 @@
 // API Client Service for Aplikasi SPP Sekolah
+import { isSupabaseConfigured } from '../lib/supabase';
+import { supabaseService } from './supabaseService';
 
 const BASE_URL = '/api';
 
@@ -41,8 +43,19 @@ export const api = {
 
   // School Settings
   school: {
-    getSettings: () => request<any>('/school'),
-    updateSettings: (body: any) => request<any>('/school', { method: 'PUT', body: JSON.stringify(body) }),
+    getSettings: async () => {
+      if (isSupabaseConfigured()) {
+        const res = await supabaseService.school.getSettings();
+        if (res.data) return res.data;
+      }
+      return request<any>('/school');
+    },
+    updateSettings: async (body: any) => {
+      if (isSupabaseConfigured()) {
+        await supabaseService.school.updateSettings(body);
+      }
+      return request<any>('/school', { method: 'PUT', body: JSON.stringify(body) });
+    },
     renameClass: (oldClassName: string, newClassName: string) =>
       request<any>('/school/rename-class', {
         method: 'POST',
@@ -54,7 +67,13 @@ export const api = {
 
   // Academic Years
   academicYears: {
-    getAll: () => request<any[]>('/academic-years'),
+    getAll: async () => {
+      if (isSupabaseConfigured()) {
+        const res = await supabaseService.master.getAcademicYears();
+        if (!res.error && res.data && res.data.length > 0) return res.data;
+      }
+      return request<any[]>('/academic-years');
+    },
     create: (body: any) => request<any>('/academic-years', { method: 'POST', body: JSON.stringify(body) }),
     setActive: (id: string) => request<any>(`/academic-years/${id}/set-active`, { method: 'PUT' }),
     generateBills: (id: string) => request<any>(`/academic-years/${id}/generate-bills`, { method: 'POST' })
@@ -62,21 +81,57 @@ export const api = {
 
   // Students
   students: {
-    getAll: (params: Record<string, string> = {}) => {
+    getAll: async (params: Record<string, string> = {}) => {
+      if (isSupabaseConfigured()) {
+        const res = await supabaseService.students.getAll({
+          class_name: params.class_name,
+          status: params.status,
+          search: params.search
+        });
+        if (!res.error && res.data && res.data.length > 0) return res.data;
+      }
       const qs = new URLSearchParams(params).toString();
       return request<any[]>(`/students${qs ? `?${qs}` : ''}`);
     },
-    getDetail: (id: string) => request<any>(`/students/${id}`),
-    create: (body: any) => request<any>('/students', { method: 'POST', body: JSON.stringify(body) }),
-    update: (id: string, body: any) => request<any>(`/students/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
-    delete: (id: string) => request<any>(`/students/${id}`, { method: 'DELETE' }),
+    getDetail: async (id: string) => {
+      if (isSupabaseConfigured()) {
+        const res = await supabaseService.students.getById(id);
+        if (!res.error && res.data) return res.data;
+      }
+      return request<any>(`/students/${id}`);
+    },
+    create: async (body: any) => {
+      if (isSupabaseConfigured()) {
+        const res = await supabaseService.students.create(body);
+        if (res.success && res.data) return res.data;
+      }
+      return request<any>('/students', { method: 'POST', body: JSON.stringify(body) });
+    },
+    update: async (id: string, body: any) => {
+      if (isSupabaseConfigured()) {
+        await supabaseService.students.update(id, body);
+      }
+      return request<any>(`/students/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+    },
+    delete: async (id: string) => {
+      if (isSupabaseConfigured()) {
+        await supabaseService.students.delete(id);
+      }
+      return request<any>(`/students/${id}`, { method: 'DELETE' });
+    },
     bulkDelete: (ids: string[]) => request<any>('/students/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
     importStudents: (students: any[]) => request<any>('/students/import', { method: 'POST', body: JSON.stringify({ students }) })
   },
 
   // SPP Types
   sppTypes: {
-    getAll: () => request<any[]>('/spp-types'),
+    getAll: async () => {
+      if (isSupabaseConfigured()) {
+        const res = await supabaseService.master.getSppTypes();
+        if (!res.error && res.data && res.data.length > 0) return res.data;
+      }
+      return request<any[]>('/spp-types');
+    },
     create: (body: any) => request<any>('/spp-types', { method: 'POST', body: JSON.stringify(body) }),
     update: (id: string, body: any) => request<any>(`/spp-types/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
     duplicate: (id: string) => request<any>(`/spp-types/${id}/duplicate`, { method: 'POST' }),
@@ -85,7 +140,13 @@ export const api = {
 
   // Eskul
   eskul: {
-    getAll: () => request<any[]>('/eskul'),
+    getAll: async () => {
+      if (isSupabaseConfigured()) {
+        const res = await supabaseService.master.getEskulTypes();
+        if (!res.error && res.data && res.data.length > 0) return res.data;
+      }
+      return request<any[]>('/eskul');
+    },
     create: (body: any) => request<any>('/eskul', { method: 'POST', body: JSON.stringify(body) }),
     update: (id: string, body: any) => request<any>(`/eskul/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
     delete: (id: string) => request<any>(`/eskul/${id}`, { method: 'DELETE' })
@@ -93,7 +154,15 @@ export const api = {
 
   // Annual Bills
   annualBills: {
-    getAll: () => request<any>('/annual-bills'),
+    getAll: async () => {
+      if (isSupabaseConfigured()) {
+        const res = await supabaseService.master.getAnnualBillTypes();
+        if (!res.error && res.data && res.data.length > 0) {
+          return { types: res.data, packages: [] };
+        }
+      }
+      return request<any>('/annual-bills');
+    },
     createType: (body: any) => request<any>('/annual-bills/type', { method: 'POST', body: JSON.stringify(body) }),
     updateType: (id: string, body: any) => request<any>(`/annual-bills/type/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
     deleteType: (id: string) => request<any>(`/annual-bills/type/${id}`, { method: 'DELETE' }),
@@ -131,7 +200,11 @@ export const api = {
 
   // Confirmations
   confirmations: {
-    getAll: (params: Record<string, string> = {}) => {
+    getAll: async (params: Record<string, string> = {}) => {
+      if (isSupabaseConfigured()) {
+        const res = await supabaseService.confirmations.getAll(params);
+        if (!res.error && res.data && res.data.length > 0) return res.data;
+      }
       const qs = new URLSearchParams(params).toString();
       return request<any[]>(`/confirmations${qs ? `?${qs}` : ''}`);
     },
