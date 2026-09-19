@@ -31,15 +31,15 @@ export const JenisSPP: React.FC = () => {
 
   const { success, error } = useNotification();
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await api.sppTypes.getAll();
       setTypes(data);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat jenis SPP');
+      if (!silent) error(err.message || 'Gagal memuat jenis SPP');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -47,8 +47,8 @@ export const JenisSPP: React.FC = () => {
     loadData();
   }, []);
 
-  // Realtime multi-device sync
-  useRealtimeSync(loadData);
+  // Realtime multi-device sync (silent background update)
+  useRealtimeSync(() => loadData(true));
 
   const handleOpenAdd = () => {
     setFormData({

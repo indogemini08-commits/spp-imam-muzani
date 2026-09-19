@@ -8,6 +8,7 @@ import { formatRupiah, formatDateIndo } from '../../services/terbilang';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import { KwitansiModal } from '../../components/kwitansi/KwitansiModal';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 export const KonfirmasiBayar: React.FC = () => {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export const KonfirmasiBayar: React.FC = () => {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [selectedConfToReject, setSelectedConfToReject] = useState<any>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Auto Kwitansi on Approval
   const [receiptData, setReceiptData] = useState<any>(null);
@@ -29,21 +31,24 @@ export const KonfirmasiBayar: React.FC = () => {
 
   const { success, error, warning } = useNotification();
 
-  const loadConfirmations = async () => {
-    setIsLoading(true);
+  const loadConfirmations = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await api.confirmations.getAll({ status: statusFilter });
       setConfirmations(data);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat konfirmasi pembayaran');
+      if (!silent) error(err.message || 'Gagal memuat konfirmasi pembayaran');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
   useEffect(() => {
     loadConfirmations();
   }, [statusFilter]);
+
+  // Realtime multi-device sync (silent background update)
+  useRealtimeSync(() => loadConfirmations(true));
 
   // Handle Approve
   const handleApprove = async (conf: any) => {
@@ -125,8 +130,8 @@ export const KonfirmasiBayar: React.FC = () => {
 
       {/* Table */}
       <GlassCard className="p-0 overflow-hidden border border-slate-200/80 dark:border-slate-800">
-        <div className="w-full overflow-x-auto lg:overflow-x-hidden">
-          <table className="w-full table-auto text-xs text-left border-collapse">
+        <div className="w-full overflow-x-auto overscroll-x-contain -webkit-overflow-scrolling-touch">
+          <table className="w-full min-w-[850px] table-auto text-xs text-left border-collapse">
             <thead className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="py-2.5 px-2.5 whitespace-nowrap text-left">Tanggal Upload</th>

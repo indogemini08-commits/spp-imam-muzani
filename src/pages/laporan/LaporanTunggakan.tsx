@@ -9,6 +9,7 @@ import { formatRupiah, formatDateIndo } from '../../services/terbilang';
 import { exportTableToExcel } from '../../services/pdfGenerator';
 import { useNotification } from '../../context/NotificationContext';
 import { useAvailableClasses } from '../../context/SchoolContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import { ReportPrintHeader } from '../../components/laporan/ReportPrintHeader';
 import { ReportPrintFooter } from '../../components/laporan/ReportPrintFooter';
 import { ReportPdfModal } from '../../components/laporan/ReportPdfModal';
@@ -37,22 +38,26 @@ export const LaporanTunggakan: React.FC = () => {
 
   const { success, error } = useNotification();
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const res = await api.reports.getTunggakan({
         class_name: selectedClass
       });
       setData(res);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat laporan tunggakan');
+      if (!silent) error(err.message || 'Gagal memuat laporan tunggakan');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
+  useRealtimeSync(() => {
+    loadData(true);
+  });
+
   useEffect(() => {
-    loadData();
+    loadData(false);
   }, [selectedClass]);
 
   const summary = data?.summary || {
@@ -237,7 +242,7 @@ export const LaporanTunggakan: React.FC = () => {
       {/* Table */}
       <GlassCard className="overflow-hidden border border-slate-200/80 dark:border-slate-800 print:border-none print:shadow-none">
         <div className="overflow-x-auto print:overflow-visible">
-          <table className="w-full table-auto text-left text-xs border-collapse print-report-table">
+          <table className="w-full min-w-[900px] table-auto text-left text-xs border-collapse print-report-table">
             <thead className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
               <tr>
                 <th className="py-2.5 px-2 font-semibold text-center whitespace-nowrap print:bg-[#0f2744]">No</th>

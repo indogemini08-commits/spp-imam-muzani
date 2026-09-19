@@ -26,15 +26,15 @@ export const TahunPelajaran: React.FC = () => {
 
   const { success, error } = useNotification();
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await api.academicYears.getAll();
       setYears(data);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat tahun pelajaran');
+      if (!silent) error(err.message || 'Gagal memuat tahun pelajaran');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -42,8 +42,8 @@ export const TahunPelajaran: React.FC = () => {
     loadData();
   }, []);
 
-  // Realtime multi-device sync
-  useRealtimeSync(loadData);
+  // Realtime multi-device sync (silent background update)
+  useRealtimeSync(() => loadData(true));
 
   const handleSetActive = async (id: string, name: string) => {
     try {

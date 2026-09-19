@@ -5,6 +5,8 @@ import { api } from '../../services/api';
 import { formatRupiah, formatDateIndo } from '../../services/terbilang';
 import { exportTableToExcel } from '../../services/pdfGenerator';
 import { useNotification } from '../../context/NotificationContext';
+import { useAvailableClasses } from '../../context/SchoolContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import { ReportPrintHeader } from '../../components/laporan/ReportPrintHeader';
 import { ReportPrintFooter } from '../../components/laporan/ReportPrintFooter';
 import { ReportPdfModal } from '../../components/laporan/ReportPdfModal';
@@ -19,10 +21,11 @@ export const LaporanPenerimaan: React.FC = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
+  const availableClasses = useAvailableClasses();
   const { success, error } = useNotification();
 
-  const loadReport = async () => {
-    setIsLoading(true);
+  const loadReport = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await api.reports.getPenerimaan({
         class_name: selectedClass,
@@ -31,14 +34,18 @@ export const LaporanPenerimaan: React.FC = () => {
       });
       setReportData(data);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat laporan penerimaan');
+      if (!silent) error(err.message || 'Gagal memuat laporan penerimaan');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
+  useRealtimeSync(() => {
+    loadReport(true);
+  });
+
   useEffect(() => {
-    loadReport();
+    loadReport(false);
   }, [selectedClass, dateFrom, dateTo]);
 
   // Export to Excel
@@ -136,12 +143,9 @@ export const LaporanPenerimaan: React.FC = () => {
               className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium focus:outline-none"
             >
               <option value="">Semua Kelas</option>
-              <option value="7A">Kelas 7A</option>
-              <option value="7B">Kelas 7B</option>
-              <option value="8A">Kelas 8A</option>
-              <option value="8B">Kelas 8B</option>
-              <option value="9A">Kelas 9A</option>
-              <option value="10 IPA">Kelas 10 IPA</option>
+              {availableClasses.map(cls => (
+                <option key={cls} value={cls}>Kelas {cls}</option>
+              ))}
             </select>
           </div>
 
@@ -177,7 +181,7 @@ export const LaporanPenerimaan: React.FC = () => {
       {/* Dynamic Columns Report Table */}
       <GlassCard className="p-0 overflow-hidden shadow-sm print:shadow-none print:border-none">
         <div className="overflow-x-auto print:overflow-visible">
-          <table className="w-full table-auto text-xs text-left border-collapse print-report-table">
+          <table className="w-full min-w-[750px] table-auto text-xs text-left border-collapse print-report-table">
             <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="py-3 px-4 whitespace-nowrap sticky left-0 bg-slate-100 dark:bg-slate-800 z-10 print:static print:bg-[#0f2744]">Tingkat Kelas</th>

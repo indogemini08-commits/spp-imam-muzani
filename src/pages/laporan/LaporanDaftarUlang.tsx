@@ -10,6 +10,8 @@ import { AnnualBillType } from '../../types';
 import { ReportPrintHeader } from '../../components/laporan/ReportPrintHeader';
 import { ReportPrintFooter } from '../../components/laporan/ReportPrintFooter';
 import { ReportPdfModal } from '../../components/laporan/ReportPdfModal';
+import { useAvailableClasses } from '../../context/SchoolContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 export const LaporanDaftarUlang: React.FC = () => {
   const [data, setData] = useState<any>(null);
@@ -19,24 +21,29 @@ export const LaporanDaftarUlang: React.FC = () => {
   // Filter
   const [selectedClass, setSelectedClass] = useState('');
 
+  const availableClasses = useAvailableClasses();
   const { success, error } = useNotification();
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const res = await api.reports.getDaftarUlang({
         class_name: selectedClass
       });
       setData(res);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat laporan daftar ulang');
+      if (!silent) error(err.message || 'Gagal memuat laporan daftar ulang');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
+  useRealtimeSync(() => {
+    loadData(true);
+  });
+
   useEffect(() => {
-    loadData();
+    loadData(false);
   }, [selectedClass]);
 
   const annualTypes: AnnualBillType[] = data?.annualTypes || [];
@@ -149,12 +156,9 @@ export const LaporanDaftarUlang: React.FC = () => {
                 className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">Semua Kelas</option>
-                <option value="7A">Kelas 7A</option>
-                <option value="7B">Kelas 7B</option>
-                <option value="8A">Kelas 8A</option>
-                <option value="8B">Kelas 8B</option>
-                <option value="9A">Kelas 9A</option>
-                <option value="10 IPA">Kelas 10 IPA</option>
+                {availableClasses.map(cls => (
+                  <option key={cls} value={cls}>Kelas {cls}</option>
+                ))}
               </select>
             </div>
 
@@ -168,7 +172,7 @@ export const LaporanDaftarUlang: React.FC = () => {
       {/* Table */}
       <GlassCard className="p-0 overflow-hidden shadow-sm print:shadow-none print:border-none">
         <div className="overflow-x-auto print:overflow-visible">
-          <table className="w-full table-auto text-xs text-left border-collapse print-report-table">
+          <table className="w-full min-w-[850px] table-auto text-xs text-left border-collapse print-report-table">
             <thead className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
               <tr>
                 <th className="py-2.5 px-2 font-semibold text-center whitespace-nowrap print:bg-[#0f2744]">No</th>

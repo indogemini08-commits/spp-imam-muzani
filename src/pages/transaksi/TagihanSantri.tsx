@@ -9,6 +9,7 @@ import { formatRupiah, formatDateIndo } from '../../services/terbilang';
 import { useNotification } from '../../context/NotificationContext';
 import { useAvailableClasses } from '../../context/SchoolContext';
 import { PageView } from '../../components/layout/Sidebar';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 interface TagihanSantriProps {
   onNavigate: (page: PageView) => void;
@@ -38,8 +39,8 @@ export const TagihanSantri: React.FC<TagihanSantriProps> = ({ onNavigate }) => {
 
   const { success, error } = useNotification();
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [billsData, stdData] = await Promise.all([
         api.billing.getAll({
@@ -57,9 +58,9 @@ export const TagihanSantri: React.FC<TagihanSantriProps> = ({ onNavigate }) => {
         setManualForm(prev => ({ ...prev, student_id: stdData[0].id }));
       }
     } catch (err: any) {
-      error(err.message || 'Gagal memuat daftar tagihan');
+      if (!silent) error(err.message || 'Gagal memuat daftar tagihan');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -73,6 +74,9 @@ export const TagihanSantri: React.FC<TagihanSantriProps> = ({ onNavigate }) => {
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // Realtime multi-device sync (silent background update)
+  useRealtimeSync(() => loadData(true));
 
   // Submit Manual Bill
   const handleManualSubmit = async (e: React.FormEvent) => {
@@ -261,8 +265,8 @@ export const TagihanSantri: React.FC<TagihanSantriProps> = ({ onNavigate }) => {
 
       {/* Bills Table - 1 Row per Student */}
       <GlassCard className="p-0 overflow-hidden border border-slate-200/80 dark:border-slate-800">
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
+        <div className="w-full overflow-x-auto overscroll-x-contain -webkit-overflow-scrolling-touch">
+          <table className="w-full min-w-[850px] text-xs text-left border-collapse">
             <thead className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="py-3 px-3.5 text-center w-12 whitespace-nowrap">No</th>

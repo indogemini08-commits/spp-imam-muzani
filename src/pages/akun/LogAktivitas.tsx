@@ -7,6 +7,7 @@ import { formatDateIndo } from '../../services/terbilang';
 import { exportTableToExcel } from '../../services/pdfGenerator';
 import { useNotification } from '../../context/NotificationContext';
 import { AuditLog } from '../../types';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 export const LogAktivitas: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -15,20 +16,24 @@ export const LogAktivitas: React.FC = () => {
 
   const { success, error } = useNotification();
 
-  const loadLogs = async () => {
-    setIsLoading(true);
+  const loadLogs = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await api.system.getAuditLogs({ search, limit: '100' });
       setLogs(data || []);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat log aktivitas');
+      if (!silent) error(err.message || 'Gagal memuat log aktivitas');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
+  useRealtimeSync(() => {
+    loadLogs(true);
+  });
+
   useEffect(() => {
-    loadLogs();
+    loadLogs(false);
   }, [search]);
 
   const handleExportExcel = () => {
@@ -71,7 +76,7 @@ export const LogAktivitas: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={loadLogs}
+            onClick={() => loadLogs()}
             disabled={isLoading}
             className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-all"
           >
@@ -113,7 +118,7 @@ export const LogAktivitas: React.FC = () => {
       {/* Table */}
       <GlassCard className="overflow-hidden border border-slate-200/80 dark:border-slate-800">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[750px] text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
               <tr>
                 <th className="py-3 px-4 font-semibold w-12 text-center">No</th>

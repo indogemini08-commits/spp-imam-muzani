@@ -26,6 +26,7 @@ import { KwitansiModal } from '../components/kwitansi/KwitansiModal';
 import { KwitansiData } from '../services/pdfGenerator';
 import { PageView } from '../components/layout/Sidebar';
 import { useAvailableClasses } from '../context/SchoolContext';
+import { useRealtimeSync } from '../hooks/useRealtimeSync';
 
 interface DashboardProps {
   onNavigate: (page: PageView) => void;
@@ -39,21 +40,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [selectedReceipt, setSelectedReceipt] = useState<KwitansiData | null>(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
-  const fetchStats = async (cls = selectedClass) => {
-    setIsLoading(true);
+  const fetchStats = async (cls = selectedClass, silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const stats = await api.system.getDashboardStats(cls ? { class_name: cls } : {});
       setData(stats);
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchStats(selectedClass);
   }, [selectedClass]);
+
+  // Realtime multi-device sync (silent background update)
+  useRealtimeSync(() => fetchStats(selectedClass, true));
 
   const handleOpenReceipt = async (receiptNo: string) => {
     try {

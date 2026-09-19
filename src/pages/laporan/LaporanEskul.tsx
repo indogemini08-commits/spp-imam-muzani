@@ -12,6 +12,8 @@ import { PageView } from '../../components/layout/Sidebar';
 import { ReportPrintHeader } from '../../components/laporan/ReportPrintHeader';
 import { ReportPrintFooter } from '../../components/laporan/ReportPrintFooter';
 import { ReportPdfModal } from '../../components/laporan/ReportPdfModal';
+import { useAvailableClasses } from '../../context/SchoolContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 interface LaporanEskulProps {
   onNavigate?: (page: PageView) => void;
@@ -28,10 +30,11 @@ export const LaporanEskul: React.FC<LaporanEskulProps> = ({ onNavigate }) => {
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedEskul, setSelectedEskul] = useState('');
 
+  const availableClasses = useAvailableClasses();
   const { success, error } = useNotification();
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [res, types] = await Promise.all([
         api.reports.getMatrixEskul({
@@ -43,14 +46,18 @@ export const LaporanEskul: React.FC<LaporanEskulProps> = ({ onNavigate }) => {
       setData(res || []);
       setEskulList(types || []);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat laporan ekstrakurikuler');
+      if (!silent) error(err.message || 'Gagal memuat laporan ekstrakurikuler');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
+  useRealtimeSync(() => {
+    loadData(true);
+  });
+
   useEffect(() => {
-    loadData();
+    loadData(false);
   }, [selectedClass, selectedEskul]);
 
   const handleExportExcel = () => {
@@ -148,12 +155,9 @@ export const LaporanEskul: React.FC<LaporanEskulProps> = ({ onNavigate }) => {
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">Semua Kelas</option>
-                <option value="7A">Kelas 7A</option>
-                <option value="7B">Kelas 7B</option>
-                <option value="8A">Kelas 8A</option>
-                <option value="8B">Kelas 8B</option>
-                <option value="9A">Kelas 9A</option>
-                <option value="10 IPA">Kelas 10 IPA</option>
+                {availableClasses.map(cls => (
+                  <option key={cls} value={cls}>Kelas {cls}</option>
+                ))}
               </select>
             </div>
 
@@ -195,7 +199,7 @@ export const LaporanEskul: React.FC<LaporanEskulProps> = ({ onNavigate }) => {
       {/* Data Table */}
       <GlassCard className="p-0 overflow-hidden shadow-sm print:shadow-none print:border-none">
         <div className="overflow-x-auto print:overflow-visible">
-          <table className="w-full table-auto text-left text-xs border-collapse print-report-table">
+          <table className="w-full min-w-[850px] table-auto text-left text-xs border-collapse print-report-table">
             <thead className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 font-semibold">
               <tr>
                 <th className="py-2.5 px-2 text-center whitespace-nowrap print:bg-[#0f2744]">No</th>

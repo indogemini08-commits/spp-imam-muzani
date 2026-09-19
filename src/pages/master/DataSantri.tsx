@@ -158,8 +158,8 @@ export const DataSantri: React.FC = () => {
     }
   };
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [stdData, sppData, eskulData] = await Promise.all([
         api.students.getAll({
@@ -175,9 +175,9 @@ export const DataSantri: React.FC = () => {
       setSppTypes(sppData);
       setEskulTypes(eskulData);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat data santri');
+      if (!silent) error(err.message || 'Gagal memuat data santri');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -192,8 +192,8 @@ export const DataSantri: React.FC = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Realtime multi-device sync
-  useRealtimeSync(loadData);
+  // Realtime multi-device sync (silent background update)
+  useRealtimeSync(() => loadData(true));
 
   // Open Add Modal
   const handleOpenAdd = () => {

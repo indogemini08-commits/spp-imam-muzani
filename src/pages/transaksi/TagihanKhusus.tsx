@@ -24,14 +24,15 @@ import { api } from '../../services/api';
 import { Student } from '../../types';
 import { formatRupiah, formatDateIndo } from '../../services/terbilang';
 import { useNotification } from '../../context/NotificationContext';
+import { useAvailableClasses } from '../../context/SchoolContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import { PageView } from '../../components/layout/Sidebar';
 import { WhatsAppModal } from '../../components/whatsapp/WhatsAppModal';
+import { Plus } from 'lucide-react';
 
 interface TagihanKhususProps {
   onNavigate: (page: PageView) => void;
 }
-
-import { Plus } from 'lucide-react';
 
 interface KhususItemForm {
   id: string;
@@ -83,10 +84,11 @@ export const TagihanKhusus: React.FC<TagihanKhususProps> = ({ onNavigate }) => {
   // WhatsApp Modal
   const [waModalProps, setWaModalProps] = useState<any>({ isOpen: false });
 
+  const availableClasses = useAvailableClasses();
   const { success, error } = useNotification();
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [billsData, stdData] = await Promise.all([
         api.billing.getKhususBills({
@@ -102,19 +104,23 @@ export const TagihanKhusus: React.FC<TagihanKhususProps> = ({ onNavigate }) => {
         setFormStudentId(stdData[0].id);
       }
     } catch (err: any) {
-      error(err.message || 'Gagal memuat data tagihan khusus');
+      if (!silent) error(err.message || 'Gagal memuat data tagihan khusus');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
+  useRealtimeSync(() => {
+    loadData(true);
+  });
+
   useEffect(() => {
-    loadData();
+    loadData(false);
   }, [classFilter, statusFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadData();
+      loadData(false);
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
@@ -394,12 +400,9 @@ export const TagihanKhusus: React.FC<TagihanKhususProps> = ({ onNavigate }) => {
             className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-900 dark:focus:ring-blue-500 focus:outline-none"
           >
             <option value="">Semua Kelas</option>
-            <option value="7A">Kelas 7A</option>
-            <option value="7B">Kelas 7B</option>
-            <option value="8A">Kelas 8A</option>
-            <option value="8B">Kelas 8B</option>
-            <option value="9A">Kelas 9A</option>
-            <option value="10 IPA">Kelas 10 IPA</option>
+            {availableClasses.map(cls => (
+              <option key={cls} value={cls}>Kelas {cls}</option>
+            ))}
           </select>
 
           {/* Filter Status */}
@@ -420,7 +423,7 @@ export const TagihanKhusus: React.FC<TagihanKhususProps> = ({ onNavigate }) => {
       {/* Table List of Special Bills */}
       <GlassCard className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[850px] text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
               <tr>
                 <th className="py-3 px-3.5 text-center w-12 whitespace-nowrap">No</th>

@@ -8,6 +8,7 @@ import { api } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import { User, UserRole } from '../../types';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 export const Pengguna: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -32,20 +33,24 @@ export const Pengguna: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  const loadUsers = async () => {
-    setIsLoading(true);
+  const loadUsers = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await api.auth.getUsers();
       setUsers(data || []);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat data pengguna');
+      if (!silent) error(err.message || 'Gagal memuat data pengguna');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
+  useRealtimeSync(() => {
+    loadUsers(true);
+  });
+
   useEffect(() => {
-    loadUsers();
+    loadUsers(false);
   }, []);
 
   const handleOpenAddModal = () => {
@@ -172,7 +177,7 @@ export const Pengguna: React.FC = () => {
       {/* Table */}
       <GlassCard className="overflow-hidden border border-slate-200/80 dark:border-slate-800">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[750px] text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
               <tr>
                 <th className="py-3 px-4 font-semibold w-12 text-center">No</th>

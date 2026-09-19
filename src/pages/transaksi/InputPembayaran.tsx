@@ -478,7 +478,7 @@ export const InputPembayaran: React.FC = () => {
         </div>
       </GlassCard>
 
-      {selectedStudent && (
+      {selectedStudent ? (
         <form onSubmit={handleSubmitPayment} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Student Summary & Bills Selector */}
           <div className="lg:col-span-8 space-y-6">
@@ -1538,6 +1538,22 @@ export const InputPembayaran: React.FC = () => {
             </GlassCard>
           </div>
         </form>
+      ) : (
+        <GlassCard className="p-12 text-center">
+          <div className="max-w-md mx-auto space-y-3">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-3xl shadow-md shadow-blue-900/10">
+              💳
+            </div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              {students.length === 0 ? 'Belum Ada Data Santri' : 'Silakan Pilih Santri'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              {students.length === 0
+                ? 'Sistem belum memiliki santri aktif untuk dicatat pembayarannya. Silakan tambahkan data santri terlebih dahulu di menu Data Santri atau muat data demo di menu Backup & Restore.'
+                : 'Pilih nama santri pada kotak pilihan di atas untuk melihat rincian tagihan (SPP, eskul, daftar ulang) dan memproses pembayaran kasir.'}
+            </p>
+          </div>
+        </GlassCard>
       )}
 
       {/* Kwitansi Modal Popup */}

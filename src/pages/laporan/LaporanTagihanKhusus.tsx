@@ -11,6 +11,8 @@ import { ReportPrintHeader } from '../../components/laporan/ReportPrintHeader';
 import { ReportPrintFooter } from '../../components/laporan/ReportPrintFooter';
 import { ReportPdfModal } from '../../components/laporan/ReportPdfModal';
 import { PageView } from '../../components/layout/Sidebar';
+import { useAvailableClasses } from '../../context/SchoolContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 interface TagihanKhususRow {
   id: string;
@@ -32,7 +34,6 @@ interface TagihanKhususRow {
   status_label: string;
 }
 
-const AVAILABLE_CLASSES = ['7A', '7B', '8A', '8B', '9A', '10 IPA'];
 const KHUSUS_CATEGORIES = [
   'Semua Kategori',
   'Kebutuhan Asrama',
@@ -68,10 +69,11 @@ export const LaporanTagihanKhusus: React.FC<LaporanTagihanKhususProps> = ({ onNa
   const [selectedDetailRow, setSelectedDetailRow] = useState<any>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
+  const availableClasses = useAvailableClasses();
   const { success, error } = useNotification();
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const params: Record<string, string> = {};
       if (selectedClass) params.class_name = selectedClass;
@@ -91,14 +93,18 @@ export const LaporanTagihanKhusus: React.FC<LaporanTagihanKhususProps> = ({ onNa
         count_belum_lunas: 0
       });
     } catch (err: any) {
-      error(err.message || 'Gagal memuat laporan tagihan khusus');
+      if (!silent) error(err.message || 'Gagal memuat laporan tagihan khusus');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
+  useRealtimeSync(() => {
+    loadData(true);
+  });
+
   useEffect(() => {
-    loadData();
+    loadData(false);
   }, [selectedClass, selectedStatus, selectedCategory, search]);
 
   const handleExportExcel = () => {
@@ -284,7 +290,7 @@ export const LaporanTagihanKhusus: React.FC<LaporanTagihanKhususProps> = ({ onNa
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500 font-semibold"
               >
                 <option value="">Semua Kelas</option>
-                {AVAILABLE_CLASSES.map(cls => (
+                {availableClasses.map(cls => (
                   <option key={cls} value={cls}>Kelas {cls}</option>
                 ))}
               </select>
@@ -346,7 +352,7 @@ export const LaporanTagihanKhusus: React.FC<LaporanTagihanKhususProps> = ({ onNa
       {/* Main Report Table - Fullframe No Horizontal Scroll */}
       <GlassCard className="overflow-hidden border border-slate-200/80 dark:border-slate-800 print:border-none print:shadow-none">
         <div className="w-full overflow-x-auto print:overflow-visible">
-          <table className="w-full table-auto text-left text-xs border-collapse print:text-[10px]">
+          <table className="w-full min-w-[850px] table-auto text-left text-xs border-collapse print:text-[10px]">
             <thead>
               <tr className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 print:bg-[#0f2744] print:text-white">
                 <th className="py-2.5 px-2 font-semibold text-center whitespace-nowrap print:bg-[#0f2744]">No</th>

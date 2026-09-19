@@ -39,16 +39,16 @@ export const TagihanTahunan: React.FC = () => {
 
   const { success, error } = useNotification();
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const res = await api.annualBills.getAll();
       setTypes(res.types || []);
       setPackages(res.packages || []);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat data tagihan tahunan');
+      if (!silent) error(err.message || 'Gagal memuat data tagihan tahunan');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -56,8 +56,8 @@ export const TagihanTahunan: React.FC = () => {
     loadData();
   }, []);
 
-  // Realtime multi-device sync
-  useRealtimeSync(loadData);
+  // Realtime multi-device sync (silent background update)
+  useRealtimeSync(() => loadData(true));
 
   const handleOpenAdd = () => {
     setFormData({

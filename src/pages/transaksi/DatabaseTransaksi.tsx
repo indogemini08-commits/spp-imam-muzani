@@ -24,6 +24,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { KwitansiModal } from '../../components/kwitansi/KwitansiModal';
 import { useAvailableClasses } from '../../context/SchoolContext';
 import { useAuth } from '../../context/AuthContext';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 export const DatabaseTransaksi: React.FC = () => {
   const { user } = useAuth();
@@ -52,8 +53,8 @@ export const DatabaseTransaksi: React.FC = () => {
 
   const { success, error, warning } = useNotification();
 
-  const loadTransactions = async () => {
-    setIsLoading(true);
+  const loadTransactions = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await api.payments.getTransactions({
         search,
@@ -64,9 +65,9 @@ export const DatabaseTransaksi: React.FC = () => {
       });
       setTransactions(data);
     } catch (err: any) {
-      error(err.message || 'Gagal memuat transaksi');
+      if (!silent) error(err.message || 'Gagal memuat transaksi');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -80,6 +81,9 @@ export const DatabaseTransaksi: React.FC = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // Realtime multi-device sync (silent background update)
+  useRealtimeSync(() => loadTransactions(true));
 
   // Open Receipt Modal
   const handleOpenReceipt = async (receiptNo: string) => {
@@ -253,8 +257,8 @@ export const DatabaseTransaksi: React.FC = () => {
 
       {/* Transactions Table */}
       <GlassCard className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+        <div className="overflow-x-auto overscroll-x-contain -webkit-overflow-scrolling-touch">
+          <table className="w-full min-w-[850px] text-xs text-left">
             <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="py-2.5 px-3 whitespace-nowrap">No Kwitansi & Trx</th>
