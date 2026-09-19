@@ -25804,12 +25804,10 @@ async function persistDb(syncToCloud = true) {
     fs.writeFileSync(DB_FILE, buffer);
     if (syncToCloud) {
       const state = exportDatabaseState();
-      pushCloudState(state).catch((err) => {
-        console.warn("[DB] Gagal sinkronisasi background ke cloud:", err);
-      });
+      await pushCloudState(state, true);
     }
   } catch (err) {
-    console.error("Gagal menyimpan file database ke disk:", err);
+    console.error("Gagal menyimpan file database ke disk / cloud:", err);
   }
 }
 function query(sqlStr, params = []) {
